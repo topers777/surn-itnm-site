@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the ITNM Study &mdash; SURN Registry</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body { font-size: 16px; background: #fff; }
+
+    /* ── Page header strip ── */
+    .enroll-header {
+      background: var(--cardinal);
+      color: #fff;
+      padding: 28px 32px 24px;
+    }
+    .enroll-header-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .enroll-header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; }
+    .enroll-header p { font-size: 0.95rem; opacity: 0.88; margin: 0; max-width: 520px; }
+
+    /* ── Gift card callout ── */
+    .gift-banner {
+      background: #fff8e1;
+      border: 2px solid #f5c518;
+      border-radius: 12px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .gift-banner .gi { font-size: 2.2rem; flex-shrink: 0; }
+    .gift-banner h3 { font-size: 1rem; font-weight: 700; color: #7a5400; margin-bottom: 4px; }
+    .gift-banner p { font-size: 0.88rem; color: #6b4900; margin: 0; }
+
+    /* ── Timeline compact ── */
+    .tl-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+    .tl-item {
+      text-align: center;
+      padding: 14px 10px 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--sand);
+      position: relative;
+    }
+    .tl-item.first { border-color: var(--success); background: #eef8f5; }
+    .tl-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--cardinal); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700;
+      margin: 0 auto 8px;
+    }
+    .tl-dot.first { background: var(--success); }
+    .tl-time { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--cardinal); margin-bottom: 3px; }
+    .tl-time.first { color: var(--success); }
+    .tl-label { font-size: 0.82rem; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 3px; }
+    .tl-gift { font-size: 0.72rem; color: #b26b00; font-weight: 600; }
+
+    /* ── Two-column content layout ── */
+    .content-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .content-card {
+      background: var(--sand);
+      border-radius: 12px;
+      padding: 20px 22px;
+      border: 1px solid var(--border);
+    }
+    .content-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--cardinal);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .ck-list { list-style: none; padding: 0; }
+    .ck-list li {
+      display: flex; gap: 8px; align-items: flex-start;
+      font-size: 0.88rem; padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ck-list li:last-child { border-bottom: none; }
+    .ck { color: var(--success); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Question types ── */
+    .qtype-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .qt-card {
+      background: var(--sand);
+      border-radius: 10px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--cardinal);
+    }
+    .qt-card h4 { font-size: 0.85rem; font-weight: 700; color: var(--cardinal); margin-bottom: 5px; }
+    .qt-card p { font-size: 0.82rem; color: var(--text-light); margin: 0; line-height: 1.5; }
+
+    /* ── Enroll CTA ── */
+    .enroll-cta {
+      background: linear-gradient(135deg, var(--cardinal-dark), var(--cardinal));
+      border-radius: 14px;
+      padding: 36px 32px;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 28px;
+    }
+    .enroll-cta h2 { font-size: 1.4rem; margin-bottom: 8px; }
+    .enroll-cta p { opacity: 0.88; font-size: 0.92rem; margin-bottom: 24px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .enroll-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #fff; color: var(--cardinal);
+      font-size: 1.05rem; font-weight: 700;
+      padding: 15px 36px; border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .enroll-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.22); text-decoration: none; color: var(--cardinal); }
+
+    /* ── Privacy note ── */
+    .privacy-row {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      background: var(--sand); border-radius: 10px;
+      padding: 16px 20px; margin-bottom: 24px;
+      font-size: 0.84rem; color: var(--text-light);
+    }
+    .privacy-item { display: flex; align-items: center; gap: 7px; }
+    .privacy-item span { color: var(--success); font-weight: 700; font-size: 1rem; }
+
+    /* ══ PRINT STYLES ══════════════════════════════ */
+    @media print {
+      .site-header, .site-footer, .no-print, .enroll-cta { display: none !important; }
+
+      body { font-size: 12pt; background: #fff; color: #000; }
+      .content-wrap { padding: 0; max-width: 100%; }
+
+      /* Print header replaces web header */
+      .print-header {
+        display: flex !important;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 0 0 16px;
+        border-bottom: 2px solid #8C1515;
+        margin-bottom: 18px;
+      }
+      .print-header-text h2 { font-size: 14pt; color: #8C1515; margin-bottom: 4pt; }
+      .print-header-text p { font-size: 9pt; color: #555; margin: 0; max-width: 380pt; }
+      .print-qr-box { text-align: center; flex-shrink: 0; }
+      .print-qr-box p { font-size: 7.5pt; color: #555; margin-top: 4pt; }
+
+      .enroll-header { background: #8C1515; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 14px 20px; }
+      .enroll-header h1 { font-size: 16pt; }
+      .enroll-header p { font-size: 10pt; }
+      .print-qr-show { display: block !important; }
+
+      .tl-row { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+      .tl-item { padding: 8px 6px; }
+      .tl-dot { width: 24px; height: 24px; font-size: 0.7rem; }
+      .tl-label { font-size: 0.75rem; }
+
+      .two-col { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .qtype-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .content-card, .qt-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .gift-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .privacy-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      .print-enroll-note {
+        display: block !important;
+        text-align: center;
+        background: #8C1515;
+        color: #fff;
+        padding: 12pt 16pt;
+        border-radius: 8pt;
+        font-size: 11pt;
+        font-weight: 700;
+        margin: 16pt 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    /* Hidden on screen, shown on print */
+    .print-header { display: none; }
+    .print-qr-show { display: none; }
+    .print-enroll-note { display: none; }
+
+    @media (max-width: 640px) {
+      .tl-row { grid-template-columns: repeat(3, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+      .qtype-grid { grid-template-columns: 1fr; }
+      .gift-banner { flex-direction: column; text-align: center; }
+      .enroll-header-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header no-print">
+  <div class="header-inner">
+    <a class="site-logo" href="index.html">
+      <span class="logo-badge">SURN</span>
+      ITNM Registry
+    </a>
+    <nav class="site-nav">
+      <a href="index.html" class="nav-link">Provider Portal</a>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);" onclick="window.print()">&#x1F5A8; Print Handout</button>
+    </nav>
+  </div>
+</header>
+
+<!-- Web page header (hidden on print) -->
+<div class="enroll-header no-print">
+  <div class="enroll-header-inner">
+    <div>
+      <h1>Join a National Bladder Device Study</h1>
+      <p>You may be eligible to participate if you are receiving a small implant for bladder leakage and urgency. No extra clinic visits required &mdash; surveys are completed from your phone or computer.</p>
+    </div>
+    <a href="#enroll" class="btn btn-white btn-lg">Start Enrollment &rarr;</a>
+  </div>
+</div>
+
+<div class="content-wrap">
+
+  <!-- Print-only header with QR code -->
+  <div class="print-header">
+    <div class="print-header-text">
+      <h2>SURN ITNM Registry &mdash; Patient Information Sheet</h2>
+      <p>You may be eligible to participate in a national research study if you are receiving a small implantable device for bladder leakage and urgency. Participation is voluntary and does not affect your medical care.</p>
+    </div>
+    <div class="print-qr-box">
+      <div id="print-qr-code"></div>
+      <p>Scan to learn more &amp; enroll online</p>
+    </div>
+  </div>
+
+  <!-- Compensation banner -->
+  <div class="gift-banner">
+    <div class="gi">&#x1F381;</div>
+    <div>
+      <h3>Earn up to $50 in Amazon gift cards</h3>
+      <p>Receive a <strong>$10 Amazon gift card</strong> for each survey you complete &mdash; up to <strong>5 surveys over one year</strong> ($50 total). Gift cards are sent electronically after each survey.</p>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="tl-row">
+    <div class="tl-item first">
+      <div class="tl-dot first">&#x2713;</div>
+      <div class="tl-time first">Before implant</div>
+      <div class="tl-label">Baseline Survey</div>
+      <div class="tl-gift">Enroll here</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">1</div>
+      <div class="tl-time">1 month</div>
+      <div class="tl-label">Follow-up Survey</div>
+      <div class="tl-gift">$10 gift card</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">2</div>
+      <div class="tl-time">3 months</div>
+      <div class="tl-label">Follow-up Survey</div>
+      <div class="tl-gift">$10 gift card</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">3</div>
+      <div class="tl-time">6 months</div>
+      <div class="tl-label">Follow-up Survey</div>
+      <div class="tl-gift">$10 gift card</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">4</div>
+      <div class="tl-time">12 months</div>
+      <div class="tl-label">Follow-up Survey</div>
+      <div class="tl-gift">$10 gift card</div>
+    </div>
+  </div>
+
+  <!-- Eligibility + About side by side -->
+  <div class="two-col" style="margin-bottom:24px;">
+    <div class="content-card">
+      <h3>&#x1F465; Am I Eligible?</h3>
+      <ul class="ck-list">
+        <li><span class="ck">&#x2713;</span><span>Age 18 or older</span></li>
+        <li><span class="ck">&#x2713;</span><span>Receiving an iTNM implant (Revi&trade;, eCoin&trade;, Altaviva&trade;, or similar) for bladder leakage</span></li>
+        <li><span class="ck">&#x2713;</span><span>Able to read English</span></li>
+        <li><span class="ck">&#x2713;</span><span>Have a phone or email for reminders</span></li>
+        <li><span class="ck">&#x2713;</span><span>Willing to complete surveys over one year</span></li>
+      </ul>
+    </div>
+    <div class="content-card">
+      <h3>&#x1F9EC; About the Study</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-bottom:10px;">This is a national registry sponsored by the Society for Female Urology and Urodynamics (SUFU) tracking how well bladder implant devices work in real-world settings.</p>
+      <ul class="ck-list">
+        <li><span class="ck">&bull;</span><span>IRB-approved, minimal risk</span></li>
+        <li><span class="ck">&bull;</span><span>5 short surveys, 10&ndash;15 minutes each</span></li>
+        <li><span class="ck">&bull;</span><span>Reminders by text and/or email</span></li>
+        <li><span class="ck">&bull;</span><span>Withdraw at any time, no penalty</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- What to expect -->
+  <h3 style="font-size:0.95rem;font-weight:700;color:var(--cool-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">What kinds of questions will I be asked?</h3>
+  <div class="qtype-grid">
+    <div class="qt-card">
+      <h4>Bladder Symptoms</h4>
+      <p>How often you experience urgency, how frequently you urinate, and how many leakage episodes you have per day.</p>
+    </div>
+    <div class="qt-card">
+      <h4>Quality of Life</h4>
+      <p>How much your bladder symptoms affect daily activities, sleep, social life, and emotional wellbeing.</p>
+    </div>
+    <div class="qt-card">
+      <h4>Pad &amp; Product Use</h4>
+      <p>How many protective products you use each day and how that changes over time after your implant.</p>
+    </div>
+    <div class="qt-card">
+      <h4>Device Experience</h4>
+      <p>At follow-up visits: how you are using the device, your satisfaction, and any side effects or additional procedures.</p>
+    </div>
+  </div>
+
+  <!-- Privacy strip -->
+  <div class="privacy-row">
+    <div class="privacy-item"><span>&#x1F512;</span> Secure REDCap data system</div>
+    <div class="privacy-item"><span>&#x1F6E1;</span> Your identity is never published</div>
+    <div class="privacy-item"><span>&#x270B;</span> Voluntary &mdash; withdraw any time</div>
+    <div class="privacy-item"><span>&#x1F4B3;</span> Gift cards sent after each survey</div>
+  </div>
+
+  <!-- Print-only enrollment note -->
+  <div class="print-enroll-note">
+    To enroll: scan the QR code above or visit the web address shown &mdash; it takes about 5 minutes to review and consent.
+  </div>
+
+  <!-- Web-only CTA -->
+  <div class="enroll-cta no-print" id="enroll">
+    <h2>Ready to Join?</h2>
+    <p>Click below to review the full consent form and complete your baseline survey. Takes about 5 minutes.</p>
+    <a href="REDCAP_SURVEY_URL_PLACEHOLDER" class="enroll-btn" target="_blank" rel="noopener">
+      &#x1F4CB; Review Consent &amp; Enroll
+    </a>
+    <p style="font-size:0.78rem;opacity:0.7;margin-top:14px;margin-bottom:0;">
+      You will be taken to a secure REDCap survey. After consenting, complete your first survey right away.
+    </p>
+  </div>
+
+  <div style="text-align:center;font-size:0.85rem;color:var(--text-light);" class="no-print">
+    Questions? <a href="mailto:SUFUResearch@stanford.edu">SUFUResearch@stanford.edu</a><br/>
+    <span style="font-size:0.78rem;">SUFU Research Network (SURN) &bull; IRB-approved minimal risk study</span>
+  </div>
+
+  <!-- Print contact -->
+  <div style="display:none;text-align:center;font-size:9pt;color:#666;margin-top:16pt;" class="print-contact">
+    Questions? Email <strong>SUFUResearch@stanford.edu</strong> &bull; SUFU Research Network (SURN) &bull; IRB-approved minimal risk study
+  </div>
+
+</div><!-- /content-wrap -->
+
+<footer class="site-footer no-print">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <strong>SURN ITNM Registry</strong> &bull; Society for Female Urology and Urodynamics (SUFU) &bull;
+      <a href="mailto:SUFUResearch@stanford.edu" style="color:rgba(255,255,255,0.7);">SUFUResearch@stanford.edu</a>
+    </div>
+    <div class="footer-links">
+      <a href="index.html">Provider Portal</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Generate QR code for the print header (points to this page's URL)
+(function() {
+  const el = document.getElementById('print-qr-code');
+  if (!el) return;
+  function make() {
+    if (!window.QRCode) { setTimeout(make, 150); return; }
+    new QRCode(el, {
+      text: window.location.href.split('?')[0],
+      width: 100, height: 100,
+      colorDark: '#8C1515', colorLight: '#ffffff'
+    });
+  }
+  make();
+  // Show print contact on print
+  window.addEventListener('beforeprint', () => {
+    document.querySelectorAll('.print-contact').forEach(el => el.style.display = 'block');
+  });
+  window.addEventListener('afterprint', () => {
+    document.querySelectorAll('.print-contact').forEach(el => el.style.display = 'none');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin &mdash; SURN ITNM Registry</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* ── Password gate overlay ── */
+    #pw-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, var(--cardinal-dark), var(--cardinal));
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    #pw-gate .pw-box {
+      background: #fff; border-radius: 14px; padding: 40px 36px;
+      width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    #pw-gate .pw-logo { font-size: 2rem; font-weight: 800; color: var(--cardinal); margin-bottom: 6px; }
+    #pw-gate h2 { font-size: 1.15rem; margin-bottom: 4px; }
+    #pw-gate p { font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; }
+    #pw-gate input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 1rem; margin-bottom: 12px;
+      text-align: center; letter-spacing: 2px;
+    }
+    #pw-gate input:focus { outline: none; border-color: var(--cardinal); box-shadow: 0 0 0 3px rgba(140,21,21,0.1); }
+    #pw-error { color: var(--cardinal); font-size: 0.85rem; margin-top: 6px; min-height: 20px; }
+
+    /* ── Architecture callout ── */
+    .arch-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;
+      margin-top: 14px;
+    }
+    .arch-item {
+      background: var(--sand); border-radius: 8px; padding: 14px 16px;
+      border-left: 3px solid var(--cardinal);
+    }
+    .arch-item h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; color: var(--cardinal); }
+    .arch-item p { font-size: 0.8rem; color: var(--text-light); margin: 0; }
+
+    /* ── Deploy instructions ── */
+    .deploy-steps { counter-reset: step; list-style: none; padding: 0; }
+    .deploy-steps li {
+      counter-increment: step; display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid var(--light-grey); font-size: 0.88rem;
+    }
+    .deploy-steps li:last-child { border-bottom: none; }
+    .deploy-steps li::before {
+      content: counter(step); background: var(--cardinal); color: #fff;
+      width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    code { background: var(--sand); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+<!-- ══ PASSWORD GATE ══ -->
+<div id="pw-gate">
+  <div class="pw-box">
+    <div class="pw-logo">SURN</div>
+    <h2>Admin &mdash; Study Team Only</h2>
+    <p>This page is for authorized SURN ITNM research staff.<br/>Enter the admin password to continue.</p>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') checkPassword()" />
+    <button class="btn btn-primary" style="width:100%;" onclick="checkPassword()">Unlock</button>
+    <div id="pw-error"></div>
+    <p style="margin-top:16px;margin-bottom:0;font-size:0.76rem;color:var(--text-light);">
+      Forgot the password? Contact <a href="mailto:SUFUResearch@stanford.edu">SUFUResearch@stanford.edu</a>
+    </p>
+  </div>
+</div>
+
+<!-- ══ ADMIN CONTENT (hidden until unlocked) ══ -->
+<div id="admin-content" style="display:none;">
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-logo" href="index.html">
+      <span class="logo-badge">SURN</span>
+      ITNM Registry &mdash; Admin
+    </a>
+    <nav class="site-nav">
+      <a href="index.html" class="nav-link">Provider Portal</a>
+      <a href="enroll.html" target="_blank" class="nav-link">Patient Page</a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<main style="padding: 40px 0 60px; min-height: 80vh;">
+  <div class="container">
+
+    <div class="section-header">
+      <h2>Admin: REDCap Data &amp; Provider Dashboards</h2>
+      <p class="section-subtitle">Study team use only. Upload a REDCap CSV export to generate personalized dashboard links for each provider.</p>
+    </div>
+
+    <!-- How it connects -->
+    <div class="card mb-3">
+      <div class="card-title"><span class="icon">&#x1F5FA;</span> How the Registry Connects</div>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:4px;">
+        The three parts of this site are intentionally <strong>separate</strong> &mdash; registration, dashboards, and the patient enrollment page are independent workflows:
+      </p>
+      <div class="arch-grid">
+        <div class="arch-item">
+          <h4>&#x1F4DD; Provider Registration</h4>
+          <p>MDs fill out the form on the Provider Portal. Submissions are sent directly to the study team email via <strong>Formspree</strong>. Nothing is stored in the browser.</p>
+        </div>
+        <div class="arch-item">
+          <h4>&#x1F4CA; Provider Dashboards</h4>
+          <p>Separate from registration. Upload a REDCap CSV here &rarr; generate a unique link per provider &rarr; email each provider their link. No login needed.</p>
+        </div>
+        <div class="arch-item">
+          <h4>&#x1F4F1; Patient Enrollment</h4>
+          <p>The QR code on the Provider Portal links patients to <code>enroll.html</code>. Patients click through to the REDCap consent survey. No connection to registration.</p>
+        </div>
+        <div class="arch-item">
+          <h4>&#x1F504; REDCap Data Updates</h4>
+          <p>REDCap doesn&apos;t connect directly to this site. Export a fresh CSV weekly (or as needed) and re-upload here to generate updated dashboard links.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formspree setup -->
+    <div class="card mb-3">
+      <div class="card-title"><span class="icon">&#x2709;</span> Registration Submissions &mdash; Formspree Setup</div>
+      <div class="alert alert-info" style="margin-bottom:14px;">
+        <span class="alert-icon">&#x2139;</span>
+        <div style="font-size:0.85rem;">
+          Provider registrations are emailed to the study team via <strong>Formspree</strong> (free). You can also view and export all submissions at <a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a>.
+        </div>
+      </div>
+      <ol class="deploy-steps">
+        <li>Go to <a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a> &rarr; sign up free &rarr; <strong>New Form</strong> &rarr; set the notification email to <code>SUFUResearch@stanford.edu</code></li>
+        <li>Copy your Form ID (looks like <code>xpzgkwqv</code>) from the Formspree dashboard</li>
+        <li>Open <code>assets/js/app.js</code> and replace <code>YOUR_FORMSPREE_ID</code> on the Formspree line with your form ID</li>
+        <li>Done &mdash; all future registrations will be emailed immediately. Past submissions are visible at formspree.io</li>
+      </ol>
+    </div>
+
+    <!-- reCAPTCHA setup -->
+    <div class="card mb-3">
+      <div class="card-title"><span class="icon">&#x1F916;</span> reCAPTCHA Setup</div>
+      <ol class="deploy-steps">
+        <li>Go to <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">google.com/recaptcha</a> &rarr; reCAPTCHA v2 &rarr; &ldquo;I&rsquo;m not a robot&rdquo; checkbox &rarr; add your site&apos;s domain</li>
+        <li>Copy the <strong>Site Key</strong> (public) and open <code>index.html</code></li>
+        <li>Replace <code>YOUR_RECAPTCHA_SITE_KEY</code> in the <code>data-sitekey</code> attribute with your site key</li>
+        <li>Copy the <strong>Secret Key</strong> and add it to your Formspree settings under &ldquo;reCAPTCHA&rdquo; to enable server-side validation</li>
+      </ol>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div class="card mb-3">
+      <div class="card-title"><span class="icon">&#x1F4C2;</span> Step 1: Upload REDCap Export</div>
+
+      <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:16px;">
+        In REDCap: <strong>My Projects &rarr; [ITNM Project] &rarr; Data Exports, Reports, and Stats &rarr; Export Data &rarr; CSV/Microsoft Excel (raw data)</strong>.
+        The file must include the columns in the template below.
+        <a href="sample-redcap-template.csv" download>Download expected column template &rarr;</a>
+      </p>
+
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('csv-file-input').click()">
+        <div class="upload-icon">&#x1F4C5;</div>
+        <h3>Click to select REDCap CSV file</h3>
+        <p>or drag and drop here &mdash; .csv files only</p>
+        <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleFileSelect(event)" />
+      </div>
+
+      <div id="upload-feedback" class="hidden" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div class="card mb-3 hidden" id="step2-card">
+      <div class="card-title"><span class="icon">&#x1F50D;</span> Step 2: Preview &amp; Validate</div>
+      <div id="validation-summary" style="margin-bottom:16px;"></div>
+      <div class="table-wrap" id="preview-table-wrap" style="max-height:320px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Step 3: Provider Dashboard Links -->
+    <div class="card hidden" id="step3-card">
+      <div class="card-title"><span class="icon">&#x1F464;</span> Step 3: Send Each Provider Their Dashboard Link</div>
+
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        <span class="alert-icon">&#x1F511;</span>
+        <div style="font-size:0.88rem;">
+          Each provider&apos;s data is <strong>encoded directly into their unique URL</strong> &mdash; no login or account needed. When they open the link, their dashboard loads immediately on any device. <strong>Copy each link and email it to the provider.</strong> They should bookmark it. Re-upload updated REDCap data whenever you want to refresh their numbers.
+        </div>
+      </div>
+
+      <div id="provider-dashboard-list"></div>
+    </div>
+
+    <!-- Deploy / easy URL -->
+    <div class="card mt-3">
+      <div class="card-title"><span class="icon">&#x1F310;</span> Getting an Easy URL (Patient Enrollment Link)</div>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:14px;">
+        Currently the site only works as a local file. To get a shareable link like
+        <code>surn-itnm.netlify.app/enroll</code> for the patient QR code, deploy to Netlify (free):
+      </p>
+      <ol class="deploy-steps">
+        <li>Go to <a href="https://netlify.com" target="_blank" rel="noopener">netlify.com</a> &rarr; sign up free &rarr; <strong>Add new site &rarr; Deploy manually</strong></li>
+        <li>Drag the entire <code>surn-itnm-site</code> folder onto the Netlify drop zone</li>
+        <li>Netlify gives you a URL like <code>random-name-12345.netlify.app</code> &mdash; click <strong>Site settings &rarr; Change site name</strong> to set it to something like <code>surn-itnm</code></li>
+        <li>Update the reCAPTCHA allowed domains to include your new Netlify domain</li>
+        <li>The patient enrollment URL becomes <code>https://surn-itnm.netlify.app/enroll.html</code> &mdash; the QR code on the Provider Portal auto-updates to this URL once deployed</li>
+      </ol>
+      <div class="alert alert-warning mt-2" style="margin-bottom:0;">
+        <span class="alert-icon">&#x26A0;</span>
+        <div style="font-size:0.85rem;">
+          <strong>Admin page security:</strong> Once deployed publicly, the admin page is password-protected by the JS gate below. For stronger security (especially if REDCap data is sensitive), consider hosting admin on a separate private URL or using Netlify&apos;s password protection (free on Pro plan).
+          The default admin password is <code>SURN2026!</code> &mdash; change it in <code>assets/js/app.js</code> before deploying.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <strong>SURN ITNM Registry</strong> &mdash; Admin &bull;
+      <a href="mailto:SUFUResearch@stanford.edu" style="color:rgba(255,255,255,0.7);">SUFUResearch@stanford.edu</a>
+    </div>
+    <div class="footer-links">
+      <a href="index.html">Provider Portal</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+  </div>
+</footer>
+
+</div><!-- #admin-content -->
+
+<script>
+// ── Password gate ──────────────────────────────────────────────
+// Change ADMIN_PASSWORD_HASH to lock/unlock. Default: SURN2026!
+// To change: run this in browser console:
+//   await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourpassword'))
+//     .then(b => [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))
+const ADMIN_PASSWORD_HASH = 'b85fccd7e44ce76a5d6cfe39bf81f04aef2f80c04e1a57b1a7f76476e5d1f3d5'; // SURN2026!
+
+async function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (!val) { document.getElementById('pw-error').textContent = 'Please enter the password.'; return; }
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val))
+    .then(b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''));
+  if (hash === ADMIN_PASSWORD_HASH) {
+    sessionStorage.setItem('itnm_admin_auth', '1');
+    document.getElementById('pw-gate').style.display = 'none';
+    document.getElementById('admin-content').style.display = '';
+  } else {
+    document.getElementById('pw-error').textContent = 'Incorrect password. Try again.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// Auto-unlock if already authenticated this session
+if (sessionStorage.getItem('itnm_admin_auth') === '1') {
+  document.getElementById('pw-gate').style.display = 'none';
+  document.getElementById('admin-content').style.display = '';
+}
+</script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

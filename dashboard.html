@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Provider Dashboard &mdash; SURN ITNM Registry</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Email lookup gate ── */
+    .lookup-wrap {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 24px 60px;
+    }
+    .lookup-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 28px rgba(0,0,0,0.10);
+      padding: 40px 36px 32px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      border-top: 4px solid var(--cardinal);
+    }
+    .lookup-card .lock-icon { font-size: 2.2rem; margin-bottom: 12px; }
+    .lookup-card h2 { font-size: 1.25rem; margin-bottom: 6px; }
+    .lookup-card .lookup-sub { font-size: 0.88rem; color: var(--text-light); margin-bottom: 24px; }
+    .lookup-card input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 1rem; margin-bottom: 14px; text-align: center;
+    }
+    .lookup-card input:focus { outline: none; border-color: var(--cardinal); box-shadow: 0 0 0 3px rgba(140,21,21,0.1); }
+    #lookup-error { font-size: 0.85rem; color: var(--cardinal); margin-top: 8px; min-height: 20px; }
+    #lookup-spinner { display: none; font-size: 0.85rem; color: var(--text-light); margin-top: 8px; }
+
+    /* ── Preview mockup (shown below lookup gate) ── */
+    .preview-section {
+      width: 100%;
+      max-width: 820px;
+      margin-top: 40px;
+    }
+    .preview-label {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      margin-bottom: 16px;
+    }
+    .mockup-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+      pointer-events: none;
+      user-select: none;
+    }
+    .mockup-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .mockup-stamp {
+      background: rgba(140,21,21,0.88);
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      padding: 12px 32px;
+      border-radius: 6px;
+      transform: rotate(-18deg);
+      text-transform: uppercase;
+      border: 3px solid rgba(255,255,255,0.6);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    /* Mockup inner — non-interactive copy of dashboard layout */
+    .mockup-inner {
+      background: var(--sand);
+      padding: 20px;
+      filter: blur(1px);
+    }
+    .mock-header {
+      background: linear-gradient(135deg, var(--cardinal-dark), var(--cardinal));
+      border-radius: 10px;
+      padding: 18px 22px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .mock-header h3 { font-size: 1rem; margin-bottom: 2px; }
+    .mock-header p { font-size: 0.78rem; opacity: 0.8; margin: 0; }
+    .mock-stats {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .mock-stat {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      border-top: 2px solid var(--cardinal);
+    }
+    .mock-stat .n { font-size: 1.4rem; font-weight: 700; color: var(--cardinal); }
+    .mock-stat .l { font-size: 0.65rem; color: var(--text-light); text-transform: uppercase; }
+    .mock-charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .mock-chart-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 14px;
+      height: 100px;
+    }
+    .mock-chart-card .mc-title { font-size: 0.7rem; font-weight: 700; color: var(--cool-grey); text-transform: uppercase; margin-bottom: 8px; }
+    .mock-bars { display: flex; align-items: flex-end; gap: 4px; height: 60px; }
+    .mock-bar { flex: 1; background: var(--cardinal); border-radius: 3px 3px 0 0; opacity: 0.8; }
+    .mock-donut {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 14px solid var(--cardinal);
+      border-right-color: #4D9BE6;
+      border-bottom-color: #aaa;
+      margin: 0 auto;
+    }
+
+    /* ── Admin preview banner ── */
+    #admin-preview-banner {
+      background: #fff3cd; border: 2px solid #f5c518;
+      border-radius: 10px; padding: 12px 18px;
+      display: none; align-items: center; gap: 12px;
+      margin-bottom: 18px; font-size: 0.88rem;
+    }
+    #admin-preview-banner strong { color: #7a5400; }
+
+    @media (max-width: 600px) {
+      .mock-stats { grid-template-columns: repeat(3, 1fr); }
+      .mock-charts { grid-template-columns: 1fr; }
+      .lookup-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="site-logo" href="index.html">
+      <span class="logo-badge">SURN</span>
+      ITNM Registry
+    </a>
+    <nav class="site-nav">
+      <a href="index.html" class="nav-link">Provider Portal</a>
+      <a href="index.html#handouts" class="nav-link">Patient Materials</a>
+    </nav>
+  </div>
+</header>
+
+<main style="min-height: 80vh;">
+
+  <!-- ── Admin preview notice ── -->
+  <div style="max-width:1100px;margin:0 auto;padding:0 24px;">
+    <div id="admin-preview-banner">
+      <span style="font-size:1.2rem;">&#x1F50D;</span>
+      <span><strong>Admin preview</strong> &mdash; You are viewing this dashboard as the study team. This data comes from the most recent CSV upload, not from the live server.</span>
+      <a href="admin.html" class="btn btn-sm" style="background:#f5c518;color:#6b4900;margin-left:auto;flex-shrink:0;">Back to Admin</a>
+    </div>
+  </div>
+
+  <!-- ══ LOOKUP GATE (shown when not yet authenticated) ══ -->
+  <div id="lookup-gate" class="lookup-wrap">
+
+    <div class="lookup-card">
+      <div class="lock-icon">&#x1F512;</div>
+      <h2>Provider Dashboard</h2>
+      <p class="lookup-sub">Enter the email address you used when registering with the SURN ITNM registry.</p>
+
+      <input type="email" id="lookup-email" placeholder="yourname@institution.edu"
+             autocomplete="email" onkeydown="if(event.key==='Enter') lookupDashboard()" />
+
+      <button class="btn btn-primary" style="width:100%;font-size:1rem;padding:12px;" onclick="lookupDashboard()">
+        View My Dashboard
+      </button>
+      <div id="lookup-error"></div>
+      <div id="lookup-spinner">&#x23F3; Looking up your data&hellip;</div>
+
+      <p style="font-size:0.78rem;color:var(--text-light);margin-top:18px;margin-bottom:0;">
+        Not registered yet? <a href="index.html#register">Register your site &rarr;</a><br/>
+        Questions? <a href="mailto:SUFUResearch@stanford.edu">SUFUResearch@stanford.edu</a>
+      </p>
+    </div>
+
+    <!-- Static mockup preview below the gate -->
+    <div class="preview-section">
+      <div class="preview-label">Example of what your dashboard looks like</div>
+      <div class="mockup-wrap">
+        <div class="mockup-overlay"><div class="mockup-stamp">Sample</div></div>
+        <div class="mockup-inner">
+          <div class="mock-header">
+            <div>
+              <h3>Dr. Jane Smith, MD &mdash; General Hospital</h3>
+              <p>Your real data will appear here after you log in</p>
+            </div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              <div style="text-align:center;color:#fff;"><div style="font-size:1.5rem;font-weight:700;">12</div><div style="font-size:0.7rem;opacity:0.8;">Patients</div></div>
+              <div style="text-align:center;color:#fff;"><div style="font-size:1.5rem;font-weight:700;">11</div><div style="font-size:0.7rem;opacity:0.8;">Implanted</div></div>
+              <div style="text-align:center;color:#fff;"><div style="font-size:1.5rem;font-weight:700;">4</div><div style="font-size:0.7rem;opacity:0.8;">12-mo Done</div></div>
+            </div>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat"><div class="n">12</div><div class="l">Enrolled</div></div>
+            <div class="mock-stat"><div class="n">11</div><div class="l">Implanted</div></div>
+            <div class="mock-stat"><div class="n">7</div><div class="l">Revi&trade;</div></div>
+            <div class="mock-stat"><div class="n">3</div><div class="l">eCoin&trade;</div></div>
+            <div class="mock-stat" style="border-top-color:var(--warning);"><div class="n" style="color:var(--warning);">1</div><div class="l">Complications</div></div>
+            <div class="mock-stat" style="border-top-color:var(--success);"><div class="n" style="color:var(--success);">8</div><div class="l">Improved</div></div>
+          </div>
+          <div class="mock-charts">
+            <div class="mock-chart-card">
+              <div class="mc-title">Device Distribution</div>
+              <div class="mock-donut"></div>
+            </div>
+            <div class="mock-chart-card">
+              <div class="mc-title">Implants Over Time</div>
+              <div class="mock-bars">
+                <div class="mock-bar" style="height:30%"></div>
+                <div class="mock-bar" style="height:55%"></div>
+                <div class="mock-bar" style="height:40%"></div>
+                <div class="mock-bar" style="height:80%"></div>
+                <div class="mock-bar" style="height:65%"></div>
+                <div class="mock-bar" style="height:90%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /lookup-gate -->
+
+  <!-- ══ DASHBOARD CONTENT (shown after successful lookup) ══ -->
+  <div id="dashboard-state" class="hidden" style="padding: 24px 0 60px;">
+    <div class="container">
+
+      <!-- Provider header bar -->
+      <div class="provider-header" id="provider-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="provider-avatar" id="provider-avatar">MD</div>
+          <div class="provider-info">
+            <h2 id="provider-name-display"></h2>
+            <p id="provider-institution-display"></p>
+          </div>
+        </div>
+        <div class="provider-meta">
+          <div class="provider-meta-item">
+            <div class="num" id="meta-total">0</div><div class="lbl">Total Patients</div>
+          </div>
+          <div class="provider-meta-item">
+            <div class="num" id="meta-implanted">0</div><div class="lbl">Implanted</div>
+          </div>
+          <div class="provider-meta-item">
+            <div class="num" id="meta-followup">0</div><div class="lbl">In Follow-up</div>
+          </div>
+          <div class="provider-meta-item">
+            <div class="num" id="meta-complete">0</div><div class="lbl">12-mo Complete</div>
+          </div>
+        </div>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <span id="data-updated" style="font-size:0.75rem;opacity:0.75;"></span>
+          <button onclick="window.print()" class="btn btn-outline btn-sm">&#x1F5A8; Print</button>
+          <button onclick="exportCSV()" class="btn btn-outline btn-sm">&#x2B07; CSV</button>
+          <button onclick="signOut()" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-number" id="stat-enrolled">—</div><div class="stat-label">Enrolled</div></div>
+        <div class="stat-card stat-success"><div class="stat-number" id="stat-implanted">—</div><div class="stat-label">Implanted</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-revi">—</div><div class="stat-label">Revi&trade;</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-ecoin">—</div><div class="stat-label">eCoin&trade;</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-altaviva">—</div><div class="stat-label">Altaviva&trade;</div></div>
+        <div class="stat-card stat-warning"><div class="stat-number" id="stat-complications">—</div><div class="stat-label">Complications</div></div>
+        <div class="stat-card stat-success"><div class="stat-number" id="stat-improved">—</div><div class="stat-label">Much/Very Much Better</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar no-print">
+        <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+        <button class="tab-btn" onclick="showTab('outcomes')">Outcomes</button>
+        <button class="tab-btn" onclick="showTab('patients')">Patient List</button>
+        <button class="tab-btn" onclick="showTab('complications')">Complications</button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="chart-grid">
+          <div class="chart-card"><h3>Device Type Distribution</h3><div class="chart-wrapper"><canvas id="chart-devices"></canvas></div></div>
+          <div class="chart-card"><h3>Enrollment Over Time</h3><div class="chart-wrapper"><canvas id="chart-enrollment"></canvas></div></div>
+          <div class="chart-card"><h3>Survey Completion by Timepoint</h3><div class="chart-wrapper"><canvas id="chart-completion"></canvas></div></div>
+          <div class="chart-card"><h3>PGI-I at Most Recent Follow-up</h3><div class="chart-wrapper"><canvas id="chart-pgii"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- Outcomes Tab -->
+      <div class="tab-panel" id="tab-outcomes">
+        <div class="chart-card mb-3">
+          <h3>Mean OAB-Q Symptom Bother Score Over Time (lower = better)</h3>
+          <div style="height:280px;"><canvas id="chart-oabq-trend"></canvas></div>
+          <p style="font-size:0.78rem;color:var(--text-light);margin-top:8px;">OAB-Q Symptom Bother subscale (0&ndash;100). Only patients with data at each timepoint included.</p>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card"><h3>Pad Use Change (baseline vs. 6 months)</h3><div class="chart-wrapper"><canvas id="chart-pads"></canvas></div></div>
+          <div class="chart-card"><h3>Daily Urgency Episodes Change</h3><div class="chart-wrapper"><canvas id="chart-urgency"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- Patient List Tab -->
+      <div class="tab-panel" id="tab-patients">
+        <div class="card-sm" style="margin-bottom:16px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <input class="form-input" type="text" id="patient-search" placeholder="Search by patient ID or device..." style="max-width:280px;" oninput="filterPatients()" />
+            <select class="form-select" id="patient-filter-device" style="max-width:200px;" onchange="filterPatients()">
+              <option value="">All Devices</option>
+              <option value="revi">Revi&trade;</option>
+              <option value="ecoin">eCoin&trade;</option>
+              <option value="altaviva">Altaviva&trade;</option>
+              <option value="other">Other</option>
+            </select>
+            <select class="form-select" id="patient-filter-status" style="max-width:200px;" onchange="filterPatients()">
+              <option value="">All Statuses</option>
+              <option value="enrolled">Enrolled</option>
+              <option value="implanted">Implanted</option>
+              <option value="1mo_complete">1-mo Complete</option>
+              <option value="3mo_complete">3-mo Complete</option>
+              <option value="6mo_complete">6-mo Complete</option>
+              <option value="12mo_complete">12-mo Complete</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="patient-table">
+            <thead><tr>
+              <th>Patient ID</th><th>Implant Date</th><th>Device</th><th>Side</th>
+              <th>Status</th><th>Complication</th><th>Baseline OAB-Q</th><th>Latest OAB-Q</th><th>Latest PGI-I</th>
+            </tr></thead>
+            <tbody id="patient-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Complications Tab -->
+      <div class="tab-panel" id="tab-complications">
+        <div class="stats-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:24px;" id="complication-stats"></div>
+        <div class="table-wrap">
+          <table id="complications-table">
+            <thead><tr>
+              <th>Patient ID</th><th>Device</th><th>Implant Date</th>
+              <th>Complication Type</th><th>Timing</th><th>Clavien-Dindo</th><th>Notes</th>
+            </tr></thead>
+            <tbody id="complications-tbody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:24px;">No complications recorded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /dashboard-state -->
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <strong>SURN ITNM Registry</strong> &bull; Society for Female Urology and Urodynamics (SUFU) &bull;
+      <a href="mailto:SUFUResearch@stanford.edu" style="color:rgba(255,255,255,0.7);">SUFUResearch@stanford.edu</a>
+    </div>
+    <div class="footer-links">
+      <a href="index.html">Provider Portal</a>
+      <a href="enroll.html" target="_blank">Patient Enrollment</a>
+      <a href="admin.html" style="opacity:0.4;font-size:0.78rem;">Study Team</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+record_id,provider_name,provider_email,institution,implant_date,device,implant_side,status,complication_yn,complication_type,complication_timing,clavien_dindo,complication_notes,oabq_baseline,oabq_1mo,oabq_3mo,oabq_6mo,oabq_12mo,pgii_1mo,pgii_3mo,pgii_6mo,pgii_12mo,pads_baseline,pads_6mo,urgency_episodes_baseline,urgency_episodes_6mo
+ITNM-001,Dr. Jane Smith,jsmith@hospital.edu,Stanford Medical Center,2025-03-10,Revi,Left,12mo_complete,no,,,,,72,60,48,38,30,2,1,1,,3,1,8,3
+ITNM-002,Dr. Jane Smith,jsmith@hospital.edu,Stanford Medical Center,2025-04-22,eCoin,Right,6mo_complete,no,,,,,68,55,44,35,,2,2,1,,4,1,6,2
+ITNM-003,Dr. Jane Smith,jsmith@hospital.edu,Stanford Medical Center,2025-06-01,Revi,Left,3mo_complete,no,,,,,80,70,58,,,2,2,,,2,,10,4
+ITNM-004,Dr. Robert Lee,rlee@urology.edu,University Medical Center,2025-05-14,eCoin,Left,12mo_complete,no,,,,,65,54,42,,29,3,2,1,1,3,1,7,2
+ITNM-005,Dr. Robert Lee,rlee@urology.edu,University Medical Center,2025-07-08,Revi,Right,6mo_complete,yes,Infection,Postoperative,II,Superficial wound infection treated with oral antibiotics,70,62,50,40,,3,3,3,,4,2,8,5
+ITNM-006,Dr. Robert Lee,rlee@urology.edu,University Medical Center,2025-09-15,eCoin,Right,3mo_complete,no,,,,,77,,,,,,3,,,5,,9,
+ITNM-007,Dr. Maria Gonzalez,mgonzalez@fpmrs.edu,City FPMRS Practice,2025-06-20,Revi,Left,12mo_complete,no,,,,,69,58,46,36,29,2,1,1,1,3,1,7,2
+ITNM-008,Dr. Maria Gonzalez,mgonzalez@fpmrs.edu,City FPMRS Practice,2025-08-02,Revi,Right,6mo_complete,no,,,,,82,74,,,,,,,, 3,,11,
+ITNM-009,Dr. Maria Gonzalez,mgonzalez@fpmrs.edu,City FPMRS Practice,2026-01-09,eCoin,Left,1mo_complete,no,,,,,85,,,,,3,,,,5,,12,

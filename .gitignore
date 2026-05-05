@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Microsoft Office temp files
+~$*
+
+# Editor directories
+.vscode/
+.idea/
+
+# Node modules (if applicable)
+node_modules/
