@@ -148,6 +148,15 @@
     }
     #admin-preview-banner strong { color: #7a5400; }
 
+    /* ── Demo mode banner ── */
+    #demo-banner {
+      background: #e8f4fd; border: 2px solid #4D9BE6;
+      border-radius: 10px; padding: 12px 18px;
+      display: none; align-items: center; gap: 12px;
+      margin-bottom: 18px; font-size: 0.88rem;
+    }
+    #demo-banner strong { color: #1a5276; }
+
     @media (max-width: 600px) {
       .mock-stats { grid-template-columns: repeat(3, 1fr); }
       .mock-charts { grid-template-columns: 1fr; }
@@ -178,6 +187,11 @@
       <span style="font-size:1.2rem;">&#x1F50D;</span>
       <span><strong>Admin preview</strong> &mdash; You are viewing this dashboard as the study team. This data comes from the most recent CSV upload, not from the live server.</span>
       <a href="admin.html" class="btn btn-sm" style="background:#f5c518;color:#6b4900;margin-left:auto;flex-shrink:0;">Back to Admin</a>
+    </div>
+    <div id="demo-banner">
+      <span style="font-size:1.2rem;">&#x1F4CA;</span>
+      <span><strong>Demo mode</strong> &mdash; This is a sample dashboard showing what registered providers will see. Data shown is fictional.</span>
+      <a href="index.html#register" class="btn btn-sm" style="background:#4D9BE6;color:#fff;margin-left:auto;flex-shrink:0;">Register Your Site &rarr;</a>
     </div>
   </div>
 

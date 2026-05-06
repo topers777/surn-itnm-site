@@ -179,6 +179,19 @@ async function hashEmail(email) {
     }
   }
 
+  // Demo mode: ?demo=true — show sample dashboard without login
+  if (params.get('demo') === 'true') {
+    document.getElementById('demo-banner').style.display = 'flex';
+    document.getElementById('lookup-gate').classList.add('hidden');
+    const reg = getDemoRegistration();
+    const demoData = Object.assign(getDemoData(), {
+      display_name: `Dr. ${reg.first_name} ${reg.last_name}, ${reg.credentials}`,
+      institution: reg.institution,
+    });
+    renderDashboard(demoData, new Date().toISOString());
+    return;
+  }
+
   // Auto-fill email if returning during same session
   const lastEmail = sessionStorage.getItem('itnm_dashboard_email');
   if (lastEmail) {
