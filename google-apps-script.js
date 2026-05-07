@@ -36,7 +36,6 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     saveToSheet(data);
-    sendProviderConfirmation(data);
     sendStudyTeamNotification(data);
     return jsonResponse({ success: true });
   } catch (err) {
@@ -112,40 +111,6 @@ function saveToSheet(data) {
 
   // Auto-resize columns for readability
   sheet.autoResizeColumns(1, COLUMNS.length);
-}
-
-// ── Send confirmation email to the provider ─────────────────
-function sendProviderConfirmation(data) {
-  const name = `Dr. ${data.last_name || 'Provider'}`;
-  const subject = 'SURN ITNM Registry — Registration Confirmed';
-  const body = `Dear ${name},
-
-Thank you for registering with the SURN ITNM Registry!
-
-Your site registration has been received. The study team will follow up within 1–2 business days to confirm your access.
-
-ACCESS YOUR PROVIDER DASHBOARD
-${DASHBOARD_URL}
-
-Log in with this email address: ${data.email}
-Your dashboard will display patient enrollment, device breakdown, complications, and validated outcomes for your site once data is available.
-
-NEXT STEPS
-1. Print or download the patient recruitment flyer from the Provider Portal
-2. Post the QR code in your office or share the enrollment link with patients at the point of care
-3. Patients complete surveys on their own device — no extra clinic work required
-
-Questions? Reply to this email or contact us at ${STUDY_EMAIL}
-
-SURN ITNM Registry Team
-Society for Female Urology and Urodynamics Research Network
-Stanford University`;
-
-  GmailApp.sendEmail(data.email, subject, body, {
-    from: STUDY_EMAIL,
-    replyTo: STUDY_EMAIL,
-    name: 'SURN ITNM Registry'
-  });
 }
 
 // ── Notify study team of new registration ───────────────────
