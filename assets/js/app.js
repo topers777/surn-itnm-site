@@ -101,11 +101,9 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFSnuVBOlACGAQ
     data.registered_at = new Date().toISOString();
 
     if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
-      // no-cors avoids CORS preflight; response is opaque but the script runs
-      fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify(data)
+      // GAS redirects POST→GET on 302; send as GET with payload param to avoid this
+      fetch(APPS_SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(data)), {
+        mode: 'no-cors'
       }).catch(() => {});
     }
 

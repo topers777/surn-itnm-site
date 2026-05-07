@@ -39,6 +39,13 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.payload) {
+    try {
+      var data = JSON.parse(e.parameter.payload);
+      saveRow(data);
+      notifyTeam(data);
+    } catch(err) {}
+  }
   return ok();
 }
 
