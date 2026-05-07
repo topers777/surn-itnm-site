@@ -15,7 +15,6 @@
 const NOTIFY_EMAIL   = 'SUFUResearch@stanford.edu';
 const SHEET_NAME     = 'ITNM Provider Registrations';
 const DASHBOARD_URL  = 'https://topers777.github.io/surn-itnm-site/dashboard.html';
-const ADMIN_KEY      = 'SURN-Admin-2026';
 
 // Run this once to authorize and test
 function setup() {
@@ -48,11 +47,7 @@ function doGet(e) {
     } catch(err) {}
     return ok();
   }
-  if (e && e.parameter && e.parameter.key) {
-    if (e.parameter.key !== ADMIN_KEY) {
-      return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Unauthorized' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
+  if (e && e.parameter && e.parameter.action === 'providers') {
     return getProviders();
   }
   return ok();
