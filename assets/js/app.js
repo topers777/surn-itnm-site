@@ -7,7 +7,7 @@
 // ── Google Apps Script endpoint ──
 // After deploying google-apps-script.js as a Web App, paste
 // the deployment URL here. Leave blank to test locally.
-const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/stanford.edu/s/AKfycbyfwk2ii0-Yq5eUJ7VEViC30RKTgzwnScpopWlm3fXnPUuCNRsCyifqs0L4b4ZaWJo8/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwennWQvi65DcJmU6z4ZsGq4fhwgyLDmvlYDZmoBGm8In6AOBTOOkfi0u5RxbIaP1IL/exec';
 
 // ══════════════════════════════════════════════
 // ENROLLMENT QR CODE (index.html, on page load)
