@@ -12,12 +12,13 @@
 //  6. Copy the Web App URL → paste into app.js
 // ─────────────────────────────────────────────────────────────
 
-const NOTIFY_EMAIL = 'SUFUResearch@stanford.edu';
-const SHEET_NAME   = 'ITNM Provider Registrations';
+const NOTIFY_EMAIL   = 'SUFUResearch@stanford.edu';
+const SHEET_NAME     = 'ITNM Provider Registrations';
+const DASHBOARD_URL  = 'https://topers777.github.io/surn-itnm-site/dashboard.html';
 
 // Run this once to authorize and test
 function setup() {
-  GmailApp.sendEmail(
+  MailApp.sendEmail(
     Session.getActiveUser().getEmail(),
     'ITNM Script: Authorization OK',
     'Google Apps Script is authorized and ready.'
@@ -80,21 +81,58 @@ function notifyTeam(d) {
     d.device_other    ? 'Other'    : ''
   ].filter(Boolean).join(', ');
 
-  GmailApp.sendEmail(
-    NOTIFY_EMAIL,
-    'New ITNM Registration: ' + d.first_name + ' ' + d.last_name + ', ' + d.institution,
-    'New provider registration:\n\n' +
+  var subject = 'New ITNM Registration: ' + d.first_name + ' ' + d.last_name + ', ' + d.institution;
+
+  var body =
+    '------------------------------------------------------------\n' +
+    'STUDY TEAM: Forward the message below to the provider.\n' +
+    'Registration details for your records are at the bottom.\n' +
+    '------------------------------------------------------------\n\n' +
+
+    'Dear Dr. ' + d.last_name + ',\n\n' +
+
+    'Thank you for registering with the SURN ITNM Registry! We are excited to have ' +
+    d.institution + ' participating in this national real-world outcomes study.\n\n' +
+
+    'YOUR PROVIDER DASHBOARD\n' +
+    DASHBOARD_URL + '\n\n' +
+    'Log in with your registered email address: ' + d.email + '\n' +
+    'Your dashboard will display enrollment counts, device breakdown, complications, ' +
+    'and validated outcomes (OAB-Q, PGI-I) for your patients as data becomes available.\n\n' +
+
+    'DASHBOARD UPDATES\n' +
+    'Your dashboard is refreshed monthly as new survey data comes in. ' +
+    'If you would like an out-of-sequence update at any time, simply email us at ' +
+    NOTIFY_EMAIL + ' and we will push a refresh for your site.\n\n' +
+
+    'NEXT STEPS\n' +
+    '1. Download the patient recruitment flyer: ' + DASHBOARD_URL.replace('dashboard.html', 'handouts/ITNM_Patient_Recruitment_Flyer.docx') + '\n' +
+    '2. Share the enrollment link with patients at the point of care: ' + DASHBOARD_URL.replace('dashboard.html', 'enroll.html') + '\n' +
+    '3. Patients complete surveys from their own device — no extra clinic work required.\n\n' +
+
+    'Questions? Reply to this email or contact us at ' + NOTIFY_EMAIL + '\n\n' +
+    'Thank you again for your participation.\n\n' +
+    'Best regards,\n' +
+    'SURN ITNM Registry Team\n' +
+    'Society for Female Urology and Urodynamics Research Network\n\n' +
+
+    '============================================================\n' +
+    'REGISTRATION DETAILS (study team use)\n' +
+    '============================================================\n' +
     'Name:         ' + d.first_name + ' ' + d.last_name + ', ' + d.credentials + '\n' +
-    'Institution:  ' + d.institution + '\n' +
-    'Email:        ' + d.email + '\n' +
-    'Phone:        ' + d.office_phone + '\n' +
     'Specialty:    ' + (d.specialty || '—') + '\n' +
+    'Institution:  ' + d.institution + '\n' +
+    'Address:      ' + (d.address || '—') + '\n' +
+    'Email:        ' + d.email + '\n' +
+    'Office Phone: ' + d.office_phone + '\n' +
+    'Cell Phone:   ' + (d.cell_phone || '—') + '\n' +
+    'Preferred:    ' + d.contact_pref + '\n' +
     'Devices:      ' + devices + '\n' +
-    'Implants/yr:  ' + (d.implants_per_year || '—') + '\n\n' +
-    'Notes: ' + (d.notes || 'none') + '\n\n' +
-    'Registered: ' + d.registered_at,
-    { replyTo: d.email }
-  );
+    'Implants/yr:  ' + (d.implants_per_year || '—') + '\n' +
+    'Notes:        ' + (d.notes || 'none') + '\n' +
+    'Registered:   ' + d.registered_at;
+
+  MailApp.sendEmail(NOTIFY_EMAIL, subject, body, { replyTo: d.email, bcc: 'trude@stanford.edu' });
 }
 
 function ok() {
