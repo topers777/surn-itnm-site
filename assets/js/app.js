@@ -7,7 +7,7 @@
 // ── Google Apps Script endpoint ──
 // After deploying google-apps-script.js as a Web App, paste
 // the deployment URL here. Leave blank to test locally.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwennWQvi65DcJmU6z4ZsGq4fhwgyLDmvlYDZmoBGm8In6AOBTOOkfi0u5RxbIaP1IL/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoFSCe4MxhceXgccba16reWjlhbERQxIz0SJ4Bq4utMoxDdxYBXnKbNOaQCbws4aVi/exec';
 
 // ══════════════════════════════════════════════
 // ENROLLMENT QR CODE (index.html, on page load)
@@ -101,27 +101,14 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwennWQvi65DcJm
     data.registered_at = new Date().toISOString();
 
     try {
-      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
-        // No endpoint configured — skip submission (local testing)
-        console.warn('APPS_SCRIPT_URL not set. Skipping form submission.');
-      } else {
-        const res = await fetch(APPS_SCRIPT_URL, {
+      if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
+        // no-cors avoids CORS preflight; response is opaque but the script runs
+        fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          mode: 'no-cors',
           body: JSON.stringify(data)
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!json.success) throw new Error('Submission failed');
+        }).catch(() => {});
       }
-    } catch (err) {
-      if (window.location.protocol !== 'file:' && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Registration';
-        errorEl.textContent = '⚠ Submission failed. Please email SUFUResearch@stanford.edu directly.';
-        errorEl.classList.remove('hidden');
-        return;
-      }
-    }
 
     document.getElementById('reg-form-card').classList.add('hidden');
     const successEl = document.getElementById('reg-success');
