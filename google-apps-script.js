@@ -15,6 +15,7 @@
 const NOTIFY_EMAIL   = 'SUFUResearch@stanford.edu';
 const SHEET_NAME     = 'ITNM Provider Registrations';
 const DASHBOARD_URL  = 'https://topers777.github.io/surn-itnm-site/dashboard.html';
+const ADMIN_KEY      = 'SURN-Admin-2026';
 
 // Run this once to authorize and test
 function setup() {
@@ -45,8 +46,44 @@ function doGet(e) {
       saveRow(data);
       notifyTeam(data);
     } catch(err) {}
+    return ok();
+  }
+  if (e && e.parameter && e.parameter.key) {
+    if (e.parameter.key !== ADMIN_KEY) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return getProviders();
   }
   return ok();
+}
+
+function getProviders() {
+  try {
+    var files = DriveApp.getFilesByName(SHEET_NAME);
+    if (!files.hasNext()) {
+      return ContentService.createTextOutput(JSON.stringify({ success: true, providers: [], sheetUrl: null }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var ss = SpreadsheetApp.open(files.next());
+    var sheet = ss.getSheets()[0];
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return ContentService.createTextOutput(JSON.stringify({ success: true, providers: [], sheetUrl: ss.getUrl() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var headers = data[0];
+    var providers = data.slice(1).map(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i) { obj[h] = row[i]; });
+      return obj;
+    });
+    return ContentService.createTextOutput(JSON.stringify({ success: true, providers: providers, sheetUrl: ss.getUrl() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function saveRow(d) {

@@ -126,35 +126,20 @@
       </div>
     </div>
 
-    <!-- Google Apps Script setup -->
-    <div class="card mb-3">
-      <div class="card-title"><span class="icon">&#x2699;</span> One-Time Setup &mdash; Google Apps Script</div>
-      <div class="alert alert-info" style="margin-bottom:14px;">
-        <span class="alert-icon">&#x2139;</span>
-        <div style="font-size:0.85rem;">
-          Provider registrations are stored in a private <strong>Google Sheet</strong> in your Stanford Drive and emailed to the study team. Providers automatically receive a confirmation email with their dashboard link. Do this once before going live.
-        </div>
-      </div>
-      <ol class="deploy-steps">
-        <li>Open <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a> &rarr; <strong>New project</strong> &rarr; paste the entire contents of <code>google-apps-script.js</code> (included in the site folder), replacing any existing code &rarr; Save</li>
-        <li>Click <strong>Project Settings</strong> (gear icon) &rarr; <strong>Script Properties</strong> &rarr; Add property: name <code>ADMIN_KEY</code>, value = a long random password you choose (e.g. <code>SURN-Admin-2026-XK9</code>) &rarr; Save</li>
-        <li>Click <strong>Deploy</strong> &rarr; <strong>New deployment</strong> &rarr; Type: <em>Web app</em> &rarr; Execute as: <em>Me</em> &rarr; Who has access: <em>Anyone</em> &rarr; <strong>Deploy</strong> &rarr; copy the <strong>Web App URL</strong></li>
-        <li>Open <code>assets/js/app.js</code> and replace <code>PASTE_YOUR_WEB_APP_URL_HERE</code> with the URL you just copied</li>
-        <li>Enter that same Web App URL and Admin Key below to view registered providers from this admin page</li>
-      </ol>
-    </div>
-
     <!-- Registered providers table -->
     <div class="card mb-3">
       <div class="card-title"><span class="icon">&#x1F4CB;</span> Registered Providers</div>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
         <div class="form-group" style="margin:0;min-width:220px;">
           <label class="form-label" for="admin-key-input">Admin Key</label>
-          <input class="form-input" type="password" id="admin-key-input" placeholder="Enter Admin Key" />
+          <input class="form-input" type="password" id="admin-key-input" placeholder="SURN-Admin-2026" />
         </div>
         <button class="btn btn-primary" onclick="loadProviders()" id="load-providers-btn">Load Providers</button>
       </div>
       <div id="providers-feedback" style="margin-bottom:10px;font-size:0.85rem;"></div>
+      <div id="sheet-link-wrap" style="display:none;margin-bottom:12px;">
+        <a id="sheet-link" href="#" target="_blank" class="btn btn-sm" style="background:var(--sand);color:var(--cardinal);border:1px solid var(--border);">&#x1F4CA; Open Google Sheet</a>
+      </div>
       <div class="table-wrap" id="providers-table-wrap" style="display:none;">
         <table id="providers-table">
           <thead><tr>
@@ -165,17 +150,6 @@
         </table>
       </div>
       <div id="providers-empty" style="display:none;text-align:center;color:var(--text-light);padding:24px;font-size:0.9rem;">No providers registered yet.</div>
-    </div>
-
-    <!-- reCAPTCHA setup -->
-    <div class="card mb-3">
-      <div class="card-title"><span class="icon">&#x1F916;</span> reCAPTCHA Setup</div>
-      <ol class="deploy-steps">
-        <li>Go to <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">google.com/recaptcha</a> &rarr; reCAPTCHA v2 &rarr; &ldquo;I&rsquo;m not a robot&rdquo; checkbox &rarr; add your site&apos;s domain</li>
-        <li>Copy the <strong>Site Key</strong> (public) and open <code>index.html</code></li>
-        <li>Replace <code>YOUR_RECAPTCHA_SITE_KEY</code> in the <code>data-sitekey</code> attribute with your site key</li>
-        <li>Copy the <strong>Secret Key</strong> and add it to your Formspree settings under &ldquo;reCAPTCHA&rdquo; to enable server-side validation</li>
-      </ol>
     </div>
 
     <!-- Step 1: Upload -->
@@ -315,6 +289,11 @@ async function loadProviders() {
 
     if (!json.success) throw new Error(json.error || 'Unauthorized');
 
+    if (json.sheetUrl) {
+      document.getElementById('sheet-link').href = json.sheetUrl;
+      document.getElementById('sheet-link-wrap').style.display = 'block';
+    }
+
     const tbody = document.getElementById('providers-tbody');
     tbody.innerHTML = '';
 
@@ -334,7 +313,7 @@ async function loadProviders() {
           <td>${p['Institution'] || '—'}</td>
           <td><a href="mailto:${p['Email']}">${p['Email'] || '—'}</a></td>
           <td>${p['Devices'] || '—'}</td>
-          <td>${p['Implants/Year'] || '—'}</td>
+          <td>${p['Implants/yr'] || '—'}</td>
           <td>${p['Specialty'] || '—'}</td>
         `;
         tbody.appendChild(tr);
