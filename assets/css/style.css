@@ -117,7 +117,7 @@ a:hover { text-decoration: underline; }
 .hero {
   background: linear-gradient(135deg, var(--cardinal-dark) 0%, var(--cardinal) 60%, #a52020 100%);
   color: var(--white);
-  padding: 64px 24px 56px;
+  padding: 36px 24px 32px;
   text-align: center;
   position: relative;
   overflow: hidden;

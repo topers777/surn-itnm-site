@@ -6,6 +6,7 @@
   <title>Join the ITNM Study &mdash; SURN Registry</title>
   <link rel="stylesheet" href="assets/css/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     body { font-size: 16px; background: #fff; }
 
@@ -228,13 +229,12 @@
 
 <header class="site-header no-print">
   <div class="header-inner">
-    <a class="site-logo" href="index.html">
+    <span class="site-logo" style="cursor:default;">
       <span class="logo-badge">SURN</span>
       ITNM Registry
-    </a>
+    </span>
     <nav class="site-nav">
-      <a href="index.html" class="nav-link">Provider Portal</a>
-      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);" onclick="window.print()">&#x1F5A8; Print Handout</button>
+      <a href="handouts/ITNM_Patient_Recruitment_Flyer.docx" download class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);">&#x2B07; Download Handout</a>
     </nav>
   </div>
 </header>
@@ -321,7 +321,7 @@
     </div>
     <div class="content-card">
       <h3>&#x1F9EC; About the Study</h3>
-      <p style="font-size:0.88rem;line-height:1.6;margin-bottom:10px;">This is a national registry sponsored by the Society for Female Urology and Urodynamics (SUFU) tracking how well bladder implant devices work in real-world settings.</p>
+      <p style="font-size:0.88rem;line-height:1.6;margin-bottom:10px;">A national registry tracking real-world outcomes for bladder implant devices, sponsored by the SUFU Research Network.</p>
       <ul class="ck-list">
         <li><span class="ck">&bull;</span><span>IRB-approved, minimal risk</span></li>
         <li><span class="ck">&bull;</span><span>5 short surveys, 10&ndash;15 minutes each</span></li>
@@ -336,19 +336,19 @@
   <div class="qtype-grid">
     <div class="qt-card">
       <h4>Bladder Symptoms</h4>
-      <p>How often you experience urgency, how frequently you urinate, and how many leakage episodes you have per day.</p>
+      <p>Urgency frequency, urination frequency, and leakage episodes per day.</p>
     </div>
     <div class="qt-card">
       <h4>Quality of Life</h4>
-      <p>How much your bladder symptoms affect daily activities, sleep, social life, and emotional wellbeing.</p>
+      <p>How bladder symptoms affect daily activities, sleep, and social life.</p>
     </div>
     <div class="qt-card">
       <h4>Pad &amp; Product Use</h4>
-      <p>How many protective products you use each day and how that changes over time after your implant.</p>
+      <p>Daily pad use and how it changes after your implant.</p>
     </div>
     <div class="qt-card">
       <h4>Device Experience</h4>
-      <p>At follow-up visits: how you are using the device, your satisfaction, and any side effects or additional procedures.</p>
+      <p>Device usage, satisfaction, and any side effects or additional procedures.</p>
     </div>
   </div>
 
@@ -368,10 +368,14 @@
   <!-- Web-only CTA -->
   <div class="enroll-cta no-print" id="enroll">
     <h2>Ready to Join?</h2>
-    <p>Click below to review the full consent form and complete your baseline survey. Takes about 5 minutes.</p>
-    <a href="REDCAP_SURVEY_URL_PLACEHOLDER" class="enroll-btn" target="_blank" rel="noopener">
+    <p>Review the consent form and complete your baseline survey. Takes about 5 minutes.</p>
+    <div style="display:flex;justify-content:center;margin-bottom:18px;">
+      <div class="g-recaptcha" data-sitekey="6Ld5ht0sAAAAABJCR5qb_K9nGeBoghuOLRZ_SI3r" data-theme="light" id="enroll-recaptcha"></div>
+    </div>
+    <button onclick="handleEnrollClick()" class="enroll-btn" id="enroll-btn" style="cursor:pointer;border:none;">
       &#x1F4CB; Review Consent &amp; Enroll
-    </a>
+    </button>
+    <p id="enroll-captcha-error" style="font-size:0.85rem;color:#ffeb99;margin-top:10px;display:none;">Please complete the checkbox above first.</p>
     <p style="font-size:0.78rem;opacity:0.7;margin-top:14px;margin-bottom:0;">
       You will be taken to a secure REDCap survey. After consenting, complete your first survey right away.
     </p>
@@ -395,9 +399,7 @@
       <strong>SURN ITNM Registry</strong> &bull; Society for Female Urology and Urodynamics (SUFU) &bull;
       <a href="mailto:SUFUResearch@stanford.edu" style="color:rgba(255,255,255,0.7);">SUFUResearch@stanford.edu</a>
     </div>
-    <div class="footer-links">
-      <a href="index.html">Provider Portal</a>
-    </div>
+    <div class="footer-links"></div>
   </div>
 </footer>
 
@@ -423,6 +425,19 @@
     document.querySelectorAll('.print-contact').forEach(el => el.style.display = 'none');
   });
 })();
+
+function handleEnrollClick() {
+  const captcha = document.getElementById('enroll-recaptcha');
+  const errEl   = document.getElementById('enroll-captcha-error');
+  if (window.grecaptcha && captcha) {
+    if (!grecaptcha.getResponse()) {
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+  errEl.style.display = 'none';
+  window.open('https://redcap.link/itnmregistry', '_blank', 'noopener');
+}
 </script>
 </body>
 </html>

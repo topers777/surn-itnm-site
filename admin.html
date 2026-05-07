@@ -109,7 +109,7 @@
       <div class="arch-grid">
         <div class="arch-item">
           <h4>&#x1F4DD; Provider Registration</h4>
-          <p>MDs fill out the form on the Provider Portal. Submissions are sent directly to the study team email via <strong>Formspree</strong>. Nothing is stored in the browser.</p>
+          <p>MDs fill out the form on the Provider Portal. Submissions are saved to a private <strong>Google Sheet</strong> and emailed to the study team. Providers automatically receive a confirmation email with their dashboard link.</p>
         </div>
         <div class="arch-item">
           <h4>&#x1F4CA; Provider Dashboards</h4>
@@ -126,21 +126,45 @@
       </div>
     </div>
 
-    <!-- Formspree setup -->
+    <!-- Google Apps Script setup -->
     <div class="card mb-3">
-      <div class="card-title"><span class="icon">&#x2709;</span> Registration Submissions &mdash; Formspree Setup</div>
+      <div class="card-title"><span class="icon">&#x2699;</span> One-Time Setup &mdash; Google Apps Script</div>
       <div class="alert alert-info" style="margin-bottom:14px;">
         <span class="alert-icon">&#x2139;</span>
         <div style="font-size:0.85rem;">
-          Provider registrations are emailed to the study team via <strong>Formspree</strong> (free). You can also view and export all submissions at <a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a>.
+          Provider registrations are stored in a private <strong>Google Sheet</strong> in your Stanford Drive and emailed to the study team. Providers automatically receive a confirmation email with their dashboard link. Do this once before going live.
         </div>
       </div>
       <ol class="deploy-steps">
-        <li>Go to <a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a> &rarr; sign up free &rarr; <strong>New Form</strong> &rarr; set the notification email to <code>SUFUResearch@stanford.edu</code></li>
-        <li>Copy your Form ID (looks like <code>xpzgkwqv</code>) from the Formspree dashboard</li>
-        <li>Open <code>assets/js/app.js</code> and replace <code>YOUR_FORMSPREE_ID</code> on the Formspree line with your form ID</li>
-        <li>Done &mdash; all future registrations will be emailed immediately. Past submissions are visible at formspree.io</li>
+        <li>Open <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a> &rarr; <strong>New project</strong> &rarr; paste the entire contents of <code>google-apps-script.js</code> (included in the site folder), replacing any existing code &rarr; Save</li>
+        <li>Click <strong>Project Settings</strong> (gear icon) &rarr; <strong>Script Properties</strong> &rarr; Add property: name <code>ADMIN_KEY</code>, value = a long random password you choose (e.g. <code>SURN-Admin-2026-XK9</code>) &rarr; Save</li>
+        <li>Click <strong>Deploy</strong> &rarr; <strong>New deployment</strong> &rarr; Type: <em>Web app</em> &rarr; Execute as: <em>Me</em> &rarr; Who has access: <em>Anyone</em> &rarr; <strong>Deploy</strong> &rarr; copy the <strong>Web App URL</strong></li>
+        <li>Open <code>assets/js/app.js</code> and replace <code>PASTE_YOUR_WEB_APP_URL_HERE</code> with the URL you just copied</li>
+        <li>Enter that same Web App URL and Admin Key below to view registered providers from this admin page</li>
       </ol>
+    </div>
+
+    <!-- Registered providers table -->
+    <div class="card mb-3">
+      <div class="card-title"><span class="icon">&#x1F4CB;</span> Registered Providers</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="form-group" style="margin:0;min-width:220px;">
+          <label class="form-label" for="admin-key-input">Admin Key</label>
+          <input class="form-input" type="password" id="admin-key-input" placeholder="Enter Admin Key" />
+        </div>
+        <button class="btn btn-primary" onclick="loadProviders()" id="load-providers-btn">Load Providers</button>
+      </div>
+      <div id="providers-feedback" style="margin-bottom:10px;font-size:0.85rem;"></div>
+      <div class="table-wrap" id="providers-table-wrap" style="display:none;">
+        <table id="providers-table">
+          <thead><tr>
+            <th>Registered</th><th>Name</th><th>Institution</th><th>Email</th>
+            <th>Devices</th><th>Implants/yr</th><th>Specialty</th>
+          </tr></thead>
+          <tbody id="providers-tbody"></tbody>
+        </table>
+      </div>
+      <div id="providers-empty" style="display:none;text-align:center;color:var(--text-light);padding:24px;font-size:0.9rem;">No providers registered yet.</div>
     </div>
 
     <!-- reCAPTCHA setup -->
@@ -195,25 +219,22 @@
       <div id="provider-dashboard-list"></div>
     </div>
 
-    <!-- Deploy / easy URL -->
+    <!-- Deploy info -->
     <div class="card mt-3">
-      <div class="card-title"><span class="icon">&#x1F310;</span> Getting an Easy URL (Patient Enrollment Link)</div>
+      <div class="card-title"><span class="icon">&#x1F310;</span> Site URLs (GitHub Pages)</div>
       <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:14px;">
-        Currently the site only works as a local file. To get a shareable link like
-        <code>surn-itnm.netlify.app/enroll</code> for the patient QR code, deploy to Netlify (free):
+        The site is hosted at <code>https://topers777.github.io/surn-itnm-site/</code>. Key URLs:
       </p>
-      <ol class="deploy-steps">
-        <li>Go to <a href="https://netlify.com" target="_blank" rel="noopener">netlify.com</a> &rarr; sign up free &rarr; <strong>Add new site &rarr; Deploy manually</strong></li>
-        <li>Drag the entire <code>surn-itnm-site</code> folder onto the Netlify drop zone</li>
-        <li>Netlify gives you a URL like <code>random-name-12345.netlify.app</code> &mdash; click <strong>Site settings &rarr; Change site name</strong> to set it to something like <code>surn-itnm</code></li>
-        <li>Update the reCAPTCHA allowed domains to include your new Netlify domain</li>
-        <li>The patient enrollment URL becomes <code>https://surn-itnm.netlify.app/enroll.html</code> &mdash; the QR code on the Provider Portal auto-updates to this URL once deployed</li>
-      </ol>
+      <div class="arch-grid">
+        <div class="arch-item"><h4>Provider Portal</h4><p><code>…/index.html</code></p></div>
+        <div class="arch-item"><h4>Patient Enrollment</h4><p><code>…/enroll.html</code> &mdash; this is the QR code destination</p></div>
+        <div class="arch-item"><h4>Provider Dashboard</h4><p><code>…/dashboard.html</code></p></div>
+        <div class="arch-item"><h4>Admin (this page)</h4><p><code>…/admin.html</code> &mdash; password protected</p></div>
+      </div>
       <div class="alert alert-warning mt-2" style="margin-bottom:0;">
         <span class="alert-icon">&#x26A0;</span>
         <div style="font-size:0.85rem;">
-          <strong>Admin page security:</strong> Once deployed publicly, the admin page is password-protected by the JS gate below. For stronger security (especially if REDCap data is sensitive), consider hosting admin on a separate private URL or using Netlify&apos;s password protection (free on Pro plan).
-          The default admin password is <code>SURN2026!</code> &mdash; change it in <code>assets/js/app.js</code> before deploying.
+          The default admin password is <code>SURN2026!</code> &mdash; change it in <code>assets/js/app.js</code> before going live.
         </div>
       </div>
     </div>
@@ -264,6 +285,69 @@ async function checkPassword() {
 if (sessionStorage.getItem('itnm_admin_auth') === '1') {
   document.getElementById('pw-gate').style.display = 'none';
   document.getElementById('admin-content').style.display = '';
+}
+
+// ── Load registered providers from Google Apps Script ──────
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/stanford.edu/s/AKfycbyfwk2ii0-Yq5eUJ7VEViC30RKTgzwnScpopWlm3fXnPUuCNRsCyifqs0L4b4ZaWJo8/exec';
+
+// Pre-fill Admin Key from sessionStorage if previously entered
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('itnm_admin_key');
+  if (saved) document.getElementById('admin-key-input').value = saved;
+});
+
+async function loadProviders() {
+  const url = APPS_SCRIPT_URL;
+  const key = document.getElementById('admin-key-input').value.trim();
+  const feedback = document.getElementById('providers-feedback');
+  const btn = document.getElementById('load-providers-btn');
+
+  if (!key) { feedback.innerHTML = '<span style="color:var(--cardinal);">Enter the Admin Key above.</span>'; return; }
+  sessionStorage.setItem('itnm_admin_key', key);
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  feedback.innerHTML = '';
+
+  try {
+    const res  = await fetch(`${url}?key=${encodeURIComponent(key)}`);
+    const json = await res.json();
+
+    if (!json.success) throw new Error(json.error || 'Unauthorized');
+
+    const tbody = document.getElementById('providers-tbody');
+    tbody.innerHTML = '';
+
+    if (!json.providers || json.providers.length === 0) {
+      document.getElementById('providers-table-wrap').style.display = 'none';
+      document.getElementById('providers-empty').style.display = 'block';
+    } else {
+      document.getElementById('providers-empty').style.display = 'none';
+      document.getElementById('providers-table-wrap').style.display = 'block';
+
+      json.providers.forEach(p => {
+        const ts = p['Timestamp'] ? new Date(p['Timestamp']).toLocaleDateString() : '—';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ts}</td>
+          <td>${p['First Name'] || ''} ${p['Last Name'] || ''}, ${p['Credentials'] || ''}</td>
+          <td>${p['Institution'] || '—'}</td>
+          <td><a href="mailto:${p['Email']}">${p['Email'] || '—'}</a></td>
+          <td>${p['Devices'] || '—'}</td>
+          <td>${p['Implants/Year'] || '—'}</td>
+          <td>${p['Specialty'] || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      feedback.innerHTML = `<span style="color:var(--success);">&#x2713; ${json.providers.length} provider${json.providers.length !== 1 ? 's' : ''} loaded.</span>`;
+    }
+  } catch (err) {
+    feedback.innerHTML = `<span style="color:var(--cardinal);">Error: ${err.message}. Check the URL and Admin Key.</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Load Providers';
+  }
 }
 </script>
 <script src="assets/js/app.js"></script>

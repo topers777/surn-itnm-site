@@ -4,11 +4,10 @@
             CSV parsing, dashboard rendering, charts
    ───────────────────────────────────────────── */
 
-// ── Submission email (Formsubmit.co — no signup required) ──
-// Registrations are POSTed to this address via formsubmit.co.
-// On first submission, formsubmit.co sends one activation email
-// to this address. Confirm it and all future submissions arrive.
-const SUBMISSION_EMAIL = 'SUFUResearch@stanford.edu';
+// ── Google Apps Script endpoint ──
+// After deploying google-apps-script.js as a Web App, paste
+// the deployment URL here. Leave blank to test locally.
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/stanford.edu/s/AKfycbyfwk2ii0-Yq5eUJ7VEViC30RKTgzwnScpopWlm3fXnPUuCNRsCyifqs0L4b4ZaWJo8/exec';
 
 // ══════════════════════════════════════════════
 // ENROLLMENT QR CODE (index.html, on page load)
@@ -98,25 +97,24 @@ const SUBMISSION_EMAIL = 'SUFUResearch@stanford.edu';
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
 
-    // Build JSON payload for Formsubmit.co AJAX endpoint
-    // No signup required — confirm the one-time activation email on first submission
     const data = Object.fromEntries(new FormData(form).entries());
-    data._subject = 'New ITNM Registry Provider Registration';
-    data._template = 'table';
     data.registered_at = new Date().toISOString();
 
     try {
-      const res = await fetch(`https://formsubmit.co/ajax/${SUBMISSION_EMAIL}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(data)
-      });
-      // Formsubmit.co returns {success:"true"} on success
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok && json.success !== 'true') throw new Error(res.status);
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+        // No endpoint configured — skip submission (local testing)
+        console.warn('APPS_SCRIPT_URL not set. Skipping form submission.');
+      } else {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!json.success) throw new Error('Submission failed');
+      }
     } catch (err) {
-      // On local file:// this will fail due to CORS — treat as success for testing
-      if (window.location.protocol !== 'file:') {
+      if (window.location.protocol !== 'file:' && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Registration';
         errorEl.textContent = '⚠ Submission failed. Please email SUFUResearch@stanford.edu directly.';
