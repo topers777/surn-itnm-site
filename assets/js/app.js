@@ -100,15 +100,14 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoFSCe4MxhceXg
     const data = Object.fromEntries(new FormData(form).entries());
     data.registered_at = new Date().toISOString();
 
-    try {
-      if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
-        // no-cors avoids CORS preflight; response is opaque but the script runs
-        fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: JSON.stringify(data)
-        }).catch(() => {});
-      }
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
+      // no-cors avoids CORS preflight; response is opaque but the script runs
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify(data)
+      }).catch(() => {});
+    }
 
     document.getElementById('reg-form-card').classList.add('hidden');
     const successEl = document.getElementById('reg-success');
