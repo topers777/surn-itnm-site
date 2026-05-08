@@ -14,7 +14,7 @@
 
 const NOTIFY_EMAIL   = 'SUFUResearch@stanford.edu';
 const SHEET_NAME     = 'ITNM Provider Registrations';
-const DASHBOARD_URL  = 'https://topers777.github.io/surn-itnm-site/dashboard.html';
+const DASHBOARD_URL  = 'https://ITNMDatabase.surn.stanford.edu/dashboard.html';
 
 // Run this once to authorize and test
 function setup() {
