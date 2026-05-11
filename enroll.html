@@ -10,6 +10,37 @@
   <style>
     body { font-size: 16px; background: #fff; }
 
+    /* ── Coming-soon gate ── */
+    #enroll-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--sand);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px;
+    }
+    #enroll-gate .gate-card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.13);
+      border-top: 5px solid var(--cardinal);
+      padding: 40px 36px 32px;
+      width: 100%; max-width: 420px; text-align: center;
+    }
+    #enroll-gate .gate-icon { font-size: 2.4rem; margin-bottom: 14px; }
+    #enroll-gate h2 { font-size: 1.3rem; margin-bottom: 8px; }
+    #enroll-gate .gate-sub { font-size: 0.9rem; color: var(--text-light); margin-bottom: 6px; }
+    #enroll-gate .gate-date {
+      display: inline-block; background: #fff3cd;
+      color: #7a5400; font-weight: 700; font-size: 0.88rem;
+      border-radius: 20px; padding: 4px 14px; margin-bottom: 24px;
+    }
+    #enroll-gate input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 1rem; margin-bottom: 12px; text-align: center;
+    }
+    #enroll-gate input:focus { outline: none; border-color: var(--cardinal); box-shadow: 0 0 0 3px rgba(140,21,21,0.1); }
+    #gate-error { font-size: 0.85rem; color: var(--cardinal); min-height: 20px; margin-top: 6px; }
+
     /* ── Page header strip ── */
     .enroll-header {
       background: var(--cardinal);
@@ -227,6 +258,24 @@
 </head>
 <body>
 
+<!-- ── Coming-soon gate ── -->
+<div id="enroll-gate">
+  <div class="gate-card">
+    <div class="gate-icon">&#x1F4C5;</div>
+    <h2>Patient Enrollment Coming Soon</h2>
+    <p class="gate-sub">The SURN ITNM Registry is now open for provider registration.</p>
+    <span class="gate-date">Patient enrollment opens Summer 2026</span>
+    <p class="gate-sub" style="margin-bottom:16px;">Research team? Enter the access code below.</p>
+    <input type="password" id="gate-pw" placeholder="Research team access code"
+           autocomplete="current-password" onkeydown="if(event.key==='Enter') checkGate()" />
+    <button class="btn btn-primary" style="width:100%;font-size:1rem;padding:11px;" onclick="checkGate()">Access Page</button>
+    <div id="gate-error"></div>
+    <p style="font-size:0.78rem;color:var(--text-light);margin-top:18px;margin-bottom:0;">
+      Questions? <a href="mailto:SUFUResearch@stanford.edu">SUFUResearch@stanford.edu</a>
+    </p>
+  </div>
+</div>
+
 <header class="site-header no-print">
   <div class="header-inner">
     <span class="site-logo" style="cursor:default;">
@@ -425,6 +474,29 @@
     document.querySelectorAll('.print-contact').forEach(el => el.style.display = 'none');
   });
 })();
+
+// ── Coming-soon gate ──────────────────────────────────────────
+const ENROLL_HASH = '5b5ba8cfd92e0e166aa30f1cc894ca0bd2d6f00358e1f11a2edf9af43400d6a3'; // SURN2026!
+
+async function checkGate() {
+  const val = document.getElementById('gate-pw').value;
+  if (!val) { document.getElementById('gate-error').textContent = 'Please enter the access code.'; return; }
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val))
+    .then(b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''));
+  if (hash === ENROLL_HASH) {
+    sessionStorage.setItem('itnm_enroll_access', '1');
+    document.getElementById('enroll-gate').style.display = 'none';
+  } else {
+    document.getElementById('gate-error').textContent = 'Incorrect access code.';
+    document.getElementById('gate-pw').value = '';
+    document.getElementById('gate-pw').focus();
+  }
+}
+
+// Auto-unlock if already authenticated this session
+if (sessionStorage.getItem('itnm_enroll_access') === '1') {
+  document.getElementById('enroll-gate').style.display = 'none';
+}
 
 function handleEnrollClick() {
   const captcha = document.getElementById('enroll-recaptcha');

@@ -250,7 +250,6 @@
         <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <span id="data-updated" style="font-size:0.75rem;opacity:0.75;"></span>
           <button onclick="window.print()" class="btn btn-outline btn-sm">&#x1F5A8; Print</button>
-          <button onclick="exportCSV()" class="btn btn-outline btn-sm">&#x2B07; CSV</button>
           <button onclick="signOut()" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);">Sign Out</button>
         </div>
       </div>
@@ -270,7 +269,6 @@
       <div class="tab-bar no-print">
         <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
         <button class="tab-btn" onclick="showTab('outcomes')">Outcomes</button>
-        <button class="tab-btn" onclick="showTab('patients')">Patient List</button>
         <button class="tab-btn" onclick="showTab('complications')">Complications</button>
       </div>
 
@@ -297,51 +295,16 @@
         </div>
       </div>
 
-      <!-- Patient List Tab -->
-      <div class="tab-panel" id="tab-patients">
-        <div class="card-sm" style="margin-bottom:16px;">
-          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-            <input class="form-input" type="text" id="patient-search" placeholder="Search by patient ID or device..." style="max-width:280px;" oninput="filterPatients()" />
-            <select class="form-select" id="patient-filter-device" style="max-width:200px;" onchange="filterPatients()">
-              <option value="">All Devices</option>
-              <option value="revi">Revi&trade;</option>
-              <option value="ecoin">eCoin&trade;</option>
-              <option value="altaviva">Altaviva&trade;</option>
-              <option value="other">Other</option>
-            </select>
-            <select class="form-select" id="patient-filter-status" style="max-width:200px;" onchange="filterPatients()">
-              <option value="">All Statuses</option>
-              <option value="enrolled">Enrolled</option>
-              <option value="implanted">Implanted</option>
-              <option value="1mo_complete">1-mo Complete</option>
-              <option value="3mo_complete">3-mo Complete</option>
-              <option value="6mo_complete">6-mo Complete</option>
-              <option value="12mo_complete">12-mo Complete</option>
-            </select>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="patient-table">
-            <thead><tr>
-              <th>Patient ID</th><th>Implant Date</th><th>Device</th><th>Side</th>
-              <th>Status</th><th>Complication</th><th>Baseline OAB-Q</th><th>Latest OAB-Q</th><th>Latest PGI-I</th>
-            </tr></thead>
-            <tbody id="patient-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Complications Tab -->
+      <!-- Complications Tab (de-identified — no patient IDs or dates) -->
       <div class="tab-panel" id="tab-complications">
         <div class="stats-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:24px;" id="complication-stats"></div>
         <div class="table-wrap">
           <table id="complications-table">
             <thead><tr>
-              <th>Patient ID</th><th>Device</th><th>Implant Date</th>
-              <th>Complication Type</th><th>Timing</th><th>Clavien-Dindo</th><th>Notes</th>
+              <th>Device</th><th>Complication Type</th><th>Timing</th><th>Clavien-Dindo</th><th>Notes</th>
             </tr></thead>
             <tbody id="complications-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:24px;">No complications recorded.</td></tr>
+              <tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:24px;">No complications recorded.</td></tr>
             </tbody>
           </table>
         </div>
