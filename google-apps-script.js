@@ -30,8 +30,8 @@ function setup() {
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    saveRow(data);
-    notifyTeam(data);
+    var regNum = saveRow(data);
+    notifyTeam(data, regNum);
     return ok();
   } catch(err) {
     return ok(); // always return 200 so form shows success
@@ -42,8 +42,8 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.payload) {
     try {
       var data = JSON.parse(e.parameter.payload);
-      saveRow(data);
-      notifyTeam(data);
+      var regNum = saveRow(data);
+      notifyTeam(data, regNum);
     } catch(err) {}
     return ok();
   }
@@ -81,6 +81,7 @@ function getProviders() {
   }
 }
 
+// Appends the registration and returns its sequential registration number
 function saveRow(d) {
   var files = DriveApp.getFilesByName(SHEET_NAME);
   var ss = files.hasNext()
@@ -90,11 +91,18 @@ function saveRow(d) {
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
-      'Timestamp','First Name','Last Name','Credentials','Specialty',
+      'Reg #','Timestamp','First Name','Last Name','Credentials','Specialty',
       'Institution','Address','Email','Office Phone','Cell Phone',
       'Preferred Contact','Devices','Implants/yr','Notes'
     ]);
+  } else if (sheet.getRange(1, 1).getValue() !== 'Reg #') {
+    // Older sheet without the number column — add it in front, keeping rows aligned
+    sheet.insertColumnBefore(1);
+    sheet.getRange(1, 1).setValue('Reg #');
   }
+
+  // Sequential number: rows below the header, plus one for this registration
+  var regNum = sheet.getLastRow();
 
   var devices = [
     d.device_revi     ? 'Revi'     : '',
@@ -104,15 +112,21 @@ function saveRow(d) {
   ].filter(Boolean).join(', ');
 
   sheet.appendRow([
+    regNum,
     new Date(),
     d.first_name || '', d.last_name || '', d.credentials || '',
     d.specialty  || '', d.institution || '', d.address || '',
     d.email      || '', d.office_phone || '', d.cell_phone || '',
     d.contact_pref || '', devices, d.implants_per_year || '', d.notes || ''
   ]);
+  return regNum;
 }
 
-function notifyTeam(d) {
+function formatRegNum(n) {
+  return 'ITNM-P' + ('000' + n).slice(-3);
+}
+
+function notifyTeam(d, regNum) {
   var devices = [
     d.device_revi     ? 'Revi'     : '',
     d.device_ecoin    ? 'eCoin'    : '',
@@ -120,7 +134,9 @@ function notifyTeam(d) {
     d.device_other    ? 'Other'    : ''
   ].filter(Boolean).join(', ');
 
-  var subject = 'New ITNM Registration: ' + d.first_name + ' ' + d.last_name + ', ' + d.institution;
+  var regLabel = regNum ? formatRegNum(regNum) : '';
+  var subject = 'New ITNM Registration' + (regLabel ? ' [' + regLabel + ']' : '') + ': ' +
+                d.first_name + ' ' + d.last_name + ', ' + d.institution;
 
   var body =
     '------------------------------------------------------------\n' +
@@ -140,7 +156,7 @@ function notifyTeam(d) {
     'and validated outcomes (OAB-Q, PGI-I) for your patients as data becomes available.\n\n' +
 
     'DASHBOARD UPDATES\n' +
-    'Your dashboard is refreshed monthly as new survey data comes in. ' +
+    'Your dashboard is refreshed every two weeks as new survey data comes in. ' +
     'If you would like an out-of-sequence update at any time, simply email us at ' +
     NOTIFY_EMAIL + ' and we will push a refresh for your site.\n\n' +
 
@@ -158,6 +174,7 @@ function notifyTeam(d) {
     '============================================================\n' +
     'REGISTRATION DETAILS (study team use)\n' +
     '============================================================\n' +
+    'Registration: ' + (regLabel || '—') + '\n' +
     'Name:         ' + d.first_name + ' ' + d.last_name + ', ' + d.credentials + '\n' +
     'Specialty:    ' + (d.specialty || '—') + '\n' +
     'Institution:  ' + d.institution + '\n' +

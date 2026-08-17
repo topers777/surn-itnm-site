@@ -208,8 +208,10 @@ async function lookupDashboard() {
     allData = await res.json();
 
     const providerData = allData.providers?.[hash];
-    if (!providerData) {
-      errorEl.textContent = 'Email not found in the registry. Check your email or contact SUFUResearch@stanford.edu.';
+    if (!providerData || !(providerData.patients || []).length) {
+      // Registered provider with no uploaded data yet — show the holding page
+      sessionStorage.setItem('itnm_dashboard_email', email);
+      showHoldingState(email);
       spinner.style.display = 'none';
       return;
     }
@@ -223,7 +225,9 @@ async function lookupDashboard() {
     if (err.message === 'file_protocol') {
       errorEl.innerHTML = 'Dashboard lookup requires the site to be hosted on a server.<br/><a href="admin.html">Study team: use Admin to preview dashboards.</a>';
     } else if (err.message === 'not_found') {
-      errorEl.innerHTML = 'Data file not yet deployed. Upload REDCap data via the <a href="admin.html">Admin</a> page, then deploy <code>data/provider-data.json</code>.';
+      // No data file deployed yet — same holding page as a provider without data
+      sessionStorage.setItem('itnm_dashboard_email', email);
+      showHoldingState(email);
     } else {
       errorEl.textContent = 'Could not load dashboard. Please try again or contact SUFUResearch@stanford.edu.';
     }
@@ -232,9 +236,28 @@ async function lookupDashboard() {
   spinner.style.display = 'none';
 }
 
+// Holding page: shown when a provider looks up their dashboard before any
+// of their REDCap data has been uploaded
+function showHoldingState(email) {
+  document.getElementById('lookup-gate').classList.add('hidden');
+  document.getElementById('dashboard-state').classList.add('hidden');
+  const emailEl = document.getElementById('holding-email');
+  if (emailEl) emailEl.textContent = email;
+  document.getElementById('holding-state').classList.remove('hidden');
+}
+
+function backToLookup() {
+  document.getElementById('holding-state').classList.add('hidden');
+  document.getElementById('lookup-gate').classList.remove('hidden');
+  const input = document.getElementById('lookup-email');
+  if (input) { input.value = ''; input.focus(); }
+}
+
 function signOut() {
   sessionStorage.removeItem('itnm_dashboard_email');
   document.getElementById('dashboard-state').classList.add('hidden');
+  const holding = document.getElementById('holding-state');
+  if (holding) holding.classList.add('hidden');
   document.getElementById('lookup-gate').classList.remove('hidden');
   document.getElementById('lookup-email').value = '';
 }
@@ -245,7 +268,7 @@ function renderDashboard(data, generated) {
   // "Last updated" label
   if (generated) {
     const el = document.getElementById('data-updated');
-    if (el) el.textContent = 'Data as of ' + new Date(generated).toLocaleDateString();
+    if (el) el.textContent = 'Data as of ' + new Date(generated).toLocaleDateString() + ' · updated every 2 weeks';
   }
 
   // Provider header
@@ -504,7 +527,7 @@ function renderPadsChart(patients) {
   const followupCounts = [0,0,0,0,0];
   patients.forEach(p => {
     const b = bucket(p.pads_baseline);
-    const f = bucket(p.pads_6mo ?? p.pads_3mo);
+    const f = bucket(p.pads_12mo ?? p.pads_6mo ?? p.pads_3mo ?? p.pads_1mo);
     if (b) baselineCounts[categories.indexOf(b)]++;
     if (f) followupCounts[categories.indexOf(f)]++;
   });
@@ -515,7 +538,7 @@ function renderPadsChart(patients) {
       labels: categories,
       datasets: [
         { label: 'Baseline', data: baselineCounts, backgroundColor: 'rgba(140,21,21,0.6)', borderRadius: 4 },
-        { label: '6-month', data: followupCounts, backgroundColor: 'rgba(23,94,84,0.7)', borderRadius: 4 }
+        { label: 'Latest follow-up', data: followupCounts, backgroundColor: 'rgba(23,94,84,0.7)', borderRadius: 4 }
       ]
     },
     options: {
@@ -545,7 +568,7 @@ function renderUrgencyChart(patients) {
   const followupCounts = [0,0,0,0,0];
   patients.forEach(p => {
     const b = bucket(p.urgency_episodes_baseline);
-    const f = bucket(p.urgency_episodes_6mo ?? p.urgency_episodes_3mo);
+    const f = bucket(p.urgency_episodes_12mo ?? p.urgency_episodes_6mo ?? p.urgency_episodes_3mo ?? p.urgency_episodes_1mo);
     if (b) baselineCounts[categories.indexOf(b)]++;
     if (f) followupCounts[categories.indexOf(f)]++;
   });
@@ -556,7 +579,7 @@ function renderUrgencyChart(patients) {
       labels: categories,
       datasets: [
         { label: 'Baseline', data: baselineCounts, backgroundColor: 'rgba(140,21,21,0.6)', borderRadius: 4 },
-        { label: '6-month', data: followupCounts, backgroundColor: 'rgba(23,94,84,0.7)', borderRadius: 4 }
+        { label: 'Latest follow-up', data: followupCounts, backgroundColor: 'rgba(23,94,84,0.7)', borderRadius: 4 }
       ]
     },
     options: {
@@ -564,7 +587,7 @@ function renderUrgencyChart(patients) {
       maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Patients' } },
-                 x: { title: { display: true, text: 'Daily urgency episodes' } } }
+                 x: { title: { display: true, text: 'Daily leakage episodes' } } }
     }
   });
 }
@@ -683,14 +706,13 @@ function renderComplicationsTab(patients) {
   }
 
   if (withComp.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:24px;">No complications recorded.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:24px;">No complications recorded.</td></tr>';
     return;
   }
 
+  // De-identified: device + complication details only, no patient IDs or dates
   tbody.innerHTML = withComp.map(p => `<tr>
-    <td><code style="font-size:0.82rem;">${escHtml(p.record_id || p.patient_id || '—')}</code></td>
     <td>${deviceBadgeHTML(p.device)}</td>
-    <td>${escHtml(p.implant_date || '—')}</td>
     <td>${escHtml(p.complication_type || '—')}</td>
     <td>${escHtml(p.complication_timing || '—')}</td>
     <td>${escHtml(p.clavien_dindo || '—')}</td>
@@ -743,9 +765,6 @@ let _parsedProviders = {};
     const file = e.dataTransfer.files[0];
     if (file) processCSVFile(file);
   });
-
-  // Load registered providers
-  renderRegisteredProviders();
 })();
 
 function handleFileSelect(event) {
@@ -763,7 +782,7 @@ function processCSVFile(file) {
   reader.onload = (e) => {
     try {
       const text = e.target.result;
-      const result = parseREDCapCSV(text);
+      const result = parseREDCapExport(text);
       displayPreview(result);
     } catch (err) {
       showUploadFeedback('error', 'Error parsing CSV: ' + err.message);
@@ -772,89 +791,175 @@ function processCSVFile(file) {
   reader.readAsText(file);
 }
 
-function parseREDCapCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) throw new Error('CSV appears empty.');
+// ─── REDCap raw-data export parsing ─────────────────────────
+// Expected file: REDCap → Data Exports, Reports, and Stats →
+// "CSV / Microsoft Excel (raw data)". Long format: one row per record
+// per event (redcap_event_name = baseline_arm_1, one_month_arm_1, …)
+// with variable names as headers (surgeon_confirm, itnm_date_verify,
+// prov_device, oab_q1…oab_q8, oab_q1_fup…, pgi_i, pads_day, leaks_num).
 
-  const headers = parseCSVRow(lines[0]);
-  const rows = lines.slice(1).filter(l => l.trim()).map(l => {
-    const vals = parseCSVRow(l);
-    const obj = {};
-    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
-    return obj;
+function parseREDCapExport(text) {
+  const table = parseCSVText(text);
+  if (table.length < 2) throw new Error('CSV appears empty.');
+
+  const headers = table[0].map(h => h.trim());
+
+  if (!headers.includes('record_id') || !headers.includes('redcap_event_name')) {
+    if (headers.includes('Record ID') || headers.includes('Event Name')) {
+      throw new Error('This looks like a <strong>labels</strong> export. In REDCap, choose "CSV / Microsoft Excel (<strong>raw data</strong>)" — variable names, not labels — and upload that file instead.');
+    }
+    throw new Error('Could not find <code>record_id</code> and <code>redcap_event_name</code> columns. Upload a raw REDCap export (see the column template).');
+  }
+
+  const rows = table.slice(1)
+    .map(r => { const o = {}; headers.forEach((h, i) => { o[h] = (r[i] ?? '').trim(); }); return o; })
+    .filter(o => o.record_id);
+
+  // Group event rows by record, keyed by timepoint
+  const records = {};
+  rows.forEach(r => {
+    (records[r.record_id] = records[r.record_id] || {})[eventTimepoint(r.redcap_event_name)] = r;
   });
 
-  // Group by provider
-  const providerKey = findColumn(headers, ['provider_name', 'provider', 'site_name', 'investigator_name']);
-  const providerEmail = findColumn(headers, ['provider_email', 'investigator_email', 'site_email']);
+  const patients = Object.entries(records).map(([id, evs]) => buildPatient(id, evs));
 
+  // Group patients by confirmed surgeon (fallback: patient-entered surgeon name)
   const providers = {};
-  rows.forEach(row => {
-    const pName = row[providerKey] || row[providerEmail] || 'Unknown Provider';
-    if (!providers[pName]) {
-      providers[pName] = {
-        provider_name: pName,
-        provider_email: row[providerEmail] || '',
-        institution: row[findColumn(headers, ['institution', 'site', 'hospital'])] || '',
-        patients: []
-      };
+  patients.forEach(p => {
+    const name = p._surgeon || 'Unassigned (no surgeon recorded)';
+    if (!providers[name]) {
+      providers[name] = { provider_name: name, provider_email: '', institution: '', patients: [], _locs: {} };
     }
-    providers[pName].patients.push(mapREDCapRow(row, headers));
+    if (p._institution) providers[name]._locs[p._institution] = (providers[name]._locs[p._institution] || 0) + 1;
+    providers[name].patients.push(p);
   });
 
-  return { headers, rows, providers };
+  // Institution = most common patient-entered location; email from saved surgeon→email map
+  const emailMap = getProviderEmailMap();
+  Object.values(providers).forEach(pr => {
+    pr.institution = (Object.entries(pr._locs).sort((a, b) => b[1] - a[1])[0] || [''])[0];
+    delete pr._locs;
+    pr.provider_email = emailMap[pr.provider_name.toLowerCase()] || '';
+  });
+
+  return { headers, rows, providers, patients };
 }
 
-function mapREDCapRow(row, headers) {
-  // Flexible column mapping — handles both exact names and common REDCap variants
-  function get(...keys) {
-    for (const k of keys) {
-      const found = findColumn(headers, [k]);
-      if (found && row[found] !== undefined && row[found] !== '') return row[found];
-    }
-    return undefined;
-  }
+function eventTimepoint(name) {
+  const n = String(name || '').toLowerCase();
+  if (n.startsWith('baseline')) return 'baseline';
+  if (/(^|_)(one|1)_?month/.test(n)) return '1mo';
+  if (/(^|_)(three|3)_?month/.test(n)) return '3mo';
+  if (/(^|_)(six|6)_?month/.test(n)) return '6mo';
+  if (/(^|_)(twelve|12)_?month|one_?year/.test(n)) return '12mo';
+  return n || 'unknown';
+}
 
-  return {
-    record_id: get('record_id', 'patient_id', 'id'),
-    patient_id: get('patient_id', 'record_id', 'id'),
-    implant_date: get('implant_date', 'surgery_date', 'procedure_date'),
-    device: get('device', 'implant_type', 'device_type'),
-    implant_side: get('implant_side', 'side', 'leg_side'),
-    status: get('status', 'patient_status', 'enrollment_status') || 'enrolled',
-    complication_yn: get('complication_yn', 'complication', 'any_complication'),
-    complication_type: get('complication_type', 'complication_detail', 'complication_types'),
-    complication_timing: get('complication_timing', 'timing'),
-    clavien_dindo: get('clavien_dindo', 'clavien'),
-    complication_notes: get('complication_notes', 'notes'),
-    oabq_baseline: parseScore(get('oabq_baseline', 'oabq_sx_baseline', 'oabq_bother_baseline')),
-    oabq_1mo: parseScore(get('oabq_1mo', 'oabq_sx_1mo', 'oabq_1month')),
-    oabq_3mo: parseScore(get('oabq_3mo', 'oabq_sx_3mo', 'oabq_3month')),
-    oabq_6mo: parseScore(get('oabq_6mo', 'oabq_sx_6mo', 'oabq_6month')),
-    oabq_12mo: parseScore(get('oabq_12mo', 'oabq_sx_12mo', 'oabq_12month')),
-    pgii_1mo: get('pgii_1mo', 'pgic_1mo', 'pgii_1month'),
-    pgii_3mo: get('pgii_3mo', 'pgic_3mo', 'pgii_3month'),
-    pgii_6mo: get('pgii_6mo', 'pgic_6mo', 'pgii_6month'),
-    pgii_12mo: get('pgii_12mo', 'pgic_12mo', 'pgii_12month'),
-    pgii_latest: get('pgii_latest', 'pgii_most_recent'),
-    pads_baseline: parseScore(get('pads_baseline', 'pads_day_baseline')),
-    pads_6mo: parseScore(get('pads_6mo', 'pads_day_6mo')),
-    urgency_episodes_baseline: parseScore(get('urgency_episodes_baseline', 'urgency_baseline', 'uui_baseline')),
-    urgency_episodes_6mo: parseScore(get('urgency_episodes_6mo', 'urgency_6mo', 'uui_6mo')),
+const DEVICE_NAMES = { ecoin: 'eCoin', revi: 'Revi', altaviva: 'Altaviva' };
+
+function buildPatient(id, evs) {
+  const base = evs.baseline || {};
+  const oneMo = evs['1mo'] || {};
+  const g = (row, field) => (row[field] || '').trim();
+
+  const p = {
+    record_id: id.length > 12 ? id.slice(0, 8) : id,  // hashes are long — shorten for display
+    patient_id: id,
   };
+
+  p._surgeon = g(base, 'surgeon_confirm') || g(base, 'surgeon_name');
+  p._institution = g(base, 'surgeon_loc');
+
+  // If the 1-month survey reports a rescheduled date, that supersedes the planned date
+  p.implant_date = g(oneMo, 'resched_date') || g(base, 'itnm_date_verify') || undefined;
+
+  const rawDevice = g(base, 'prov_device') || g(oneMo, 'device_name') || g(base, 'other_device') || g(oneMo, 'other_device_pat');
+  p.device = DEVICE_NAMES[rawDevice.toLowerCase()] || rawDevice || undefined;
+
+  const leg = g(oneMo, 'implant_leg');
+  p.implant_side = leg ? leg.charAt(0).toUpperCase() + leg.slice(1) : undefined;
+
+  // Complications: provider form (on the baseline event) + patient 1-month report
+  const provComp = g(base, 'complications') === '1';
+  const patComp = g(oneMo, 'complic_pat') === '1';
+  p.complication_yn = provComp || patComp ? 'yes' : 'no';
+  const types = [];
+  if (g(oneMo, 'bleed_pat') === '1') types.push('Bleeding');
+  if (g(oneMo, 'bruise_pat') === '1') types.push('Bruising');
+  if (g(oneMo, 'infection_pat') === '1') types.push('Infection');
+  if (g(oneMo, 'pain_pat') === '1') types.push('Pain');
+  if (g(oneMo, 'other_compl_pat') === '1') types.push(g(oneMo, 'other_compl_spec') || 'Other');
+  p.complication_type = types.join(', ') || (provComp ? 'Reported by provider' : undefined);
+  const intraop = g(base, 'intraop') === '1';
+  const postop = g(base, 'postop') === '1';
+  p.complication_timing = intraop && postop ? 'Intra- & postoperative'
+    : intraop ? 'Intraoperative'
+    : postop ? 'Postoperative'
+    : patComp ? 'Patient-reported (1 month)' : undefined;
+  p.clavien_dindo = g(base, 'clavien_dindo').toUpperCase() || undefined;
+  p.complication_notes = [g(base, 'intraop_spec'), g(base, 'postop_spec')].filter(Boolean).join('; ') || undefined;
+
+  // Outcomes
+  p.oabq_baseline = oabqBotherScore(base, '');
+  p.pads_baseline = parseScore(g(base, 'pads_day'));
+  p.urgency_episodes_baseline = parseScore(g(base, 'leaks_num'));
+
+  let latestFup = null;
+  ['1mo', '3mo', '6mo', '12mo'].forEach(tp => {
+    const row = evs[tp];
+    if (!row) return;
+    const score = oabqBotherScore(row, '_fup');
+    if (score !== undefined) p['oabq_' + tp] = score;
+    const pgii = g(row, 'pgi_i');
+    if (pgii) p['pgii_' + tp] = pgii;
+    const pads = parseScore(g(row, 'pads_day_fup'));
+    if (pads !== undefined) p['pads_' + tp] = pads;
+    const leaks = parseScore(g(row, 'leaks_num_fup') || g(row, 'times_uui_fup'));
+    if (leaks !== undefined) p['urgency_episodes_' + tp] = leaks;
+    if (score !== undefined || pgii || g(row, 'patient_follow_up_complete') === '2') latestFup = tp;
+  });
+  p.pgii_latest = p.pgii_12mo || p.pgii_6mo || p.pgii_3mo || p.pgii_1mo;
+
+  p.status = latestFup ? latestFup + '_complete'
+    : (p.implant_date || p.device || g(base, 'provider_baseline_complete') === '2') ? 'implanted'
+    : 'enrolled';
+
+  return p;
 }
 
-function findColumn(headers, candidates) {
-  for (const c of candidates) {
-    const found = headers.find(h => h.trim().toLowerCase() === c.toLowerCase());
-    if (found) return found;
+// OAB-q Symptom Bother: items oab_q1–oab_q8 coded 1–6, scaled to 0–100
+// (higher = more bother). Scored when at least half the items are answered.
+function oabqBotherScore(row, suffix) {
+  const vals = [];
+  for (let i = 1; i <= 8; i++) {
+    const v = parseFloat(row['oab_q' + i + suffix]);
+    if (!isNaN(v) && v >= 1 && v <= 6) vals.push(v);
   }
-  // Partial match fallback
-  for (const c of candidates) {
-    const found = headers.find(h => h.trim().toLowerCase().includes(c.toLowerCase()));
-    if (found) return found;
-  }
-  return candidates[0];
+  if (vals.length < 4) return undefined;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return Math.round((mean - 1) / 5 * 1000) / 10;
+}
+
+// ── Surgeon → provider-email mapping (persisted across uploads) ──
+
+function getProviderEmailMap() {
+  try { return JSON.parse(localStorage.getItem('itnm_provider_emails') || '{}'); }
+  catch (e) { return {}; }
+}
+
+function saveProviderEmailMap(map) {
+  localStorage.setItem('itnm_provider_emails', JSON.stringify(map));
+}
+
+// Match a surgeon name from REDCap against the registered-provider sheet
+// (loaded via "Load Providers"). Returns the registration row on a unique match.
+function matchRegistration(surgeonName, regs) {
+  const name = ' ' + surgeonName.toLowerCase().replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const hits = regs.filter(r => {
+    const last = String(r['Last Name'] || '').toLowerCase().trim();
+    return last.length >= 2 && name.includes(' ' + last + ' ');
+  });
+  return hits.length === 1 ? hits[0] : null;
 }
 
 function parseScore(val) {
@@ -863,50 +968,77 @@ function parseScore(val) {
   return isNaN(n) ? undefined : n;
 }
 
-function parseCSVRow(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-      else inQuotes = !inQuotes;
-    } else if (ch === ',' && !inQuotes) {
-      result.push(current);
-      current = '';
+// Character-level CSV parser — handles quoted fields containing commas and newlines
+function parseCSVText(text) {
+  const rows = [];
+  let row = [], cur = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += ch;
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      row.push(cur); cur = '';
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); rows.push(row); row = []; cur = '';
     } else {
-      current += ch;
+      cur += ch;
     }
   }
-  result.push(current);
-  return result;
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ''));
 }
 
-function displayPreview({ headers, rows, providers }) {
+function displayPreview({ headers, rows, providers, patients }) {
   _parsedProviders = providers;
 
   // Feedback
-  showUploadFeedback('success', `Loaded ${rows.length} patient records across ${Object.keys(providers).length} provider(s).`);
+  showUploadFeedback('success', `Loaded ${patients.length} patient(s) (${rows.length} event rows) across ${Object.keys(providers).length} surgeon group(s).`);
 
-  // Step 2
+  // Step 2 — validation against the raw REDCap variable names
   document.getElementById('step2-card').classList.remove('hidden');
   const validationDiv = document.getElementById('validation-summary');
-  const missing = ['record_id', 'implant_date', 'device', 'provider_name'].filter(
-    req => !headers.some(h => h.toLowerCase().includes(req.replace('_', '').toLowerCase()) || h.toLowerCase() === req)
-  );
-  if (missing.length) {
-    validationDiv.innerHTML = `<div class="alert alert-warning"><span class="alert-icon">&#x26A0;</span><div><strong>Note:</strong> Could not find columns matching: <code>${missing.join(', ')}</code>. Some fields may be blank in dashboards. See the <a href="sample-redcap-template.csv" download>column template</a>.</div></div>`;
-  } else {
-    validationDiv.innerHTML = `<div class="alert alert-success"><span class="alert-icon">&#x2705;</span><div>All expected columns found. Data looks good.</div></div>`;
-  }
+  const expected = ['surgeon_confirm', 'surgeon_name', 'surgeon_loc', 'itnm_date_verify', 'resched_date',
+                    'prov_device', 'device_name', 'implant_leg', 'oab_q1', 'oab_q1_fup', 'pgi_i',
+                    'pads_day', 'pads_day_fup', 'leaks_num', 'complications', 'complic_pat'];
+  const missing = expected.filter(c => !headers.includes(c));
+  const unassigned = (providers['Unassigned (no surgeon recorded)'] || { patients: [] }).patients.length;
 
-  // Preview table (first 8 rows, first 10 cols)
-  const previewCols = headers.slice(0, 10);
+  let html = '';
+  if (missing.length) {
+    html += `<div class="alert alert-warning"><span class="alert-icon">&#x26A0;</span><div><strong>Note:</strong> Could not find expected REDCap variable(s): <code>${missing.join(', ')}</code>. Some fields may be blank in dashboards. See the <a href="sample-redcap-template.csv" download>column template</a>.</div></div>`;
+  } else {
+    html += `<div class="alert alert-success"><span class="alert-icon">&#x2705;</span><div>All expected REDCap variables found. Data looks good.</div></div>`;
+  }
+  if (unassigned) {
+    html += `<div class="alert alert-warning"><span class="alert-icon">&#x26A0;</span><div>${unassigned} patient(s) have no surgeon recorded (<code>surgeon_confirm</code> or <code>surgeon_name</code>) and are grouped under &ldquo;Unassigned&rdquo;. Confirm their surgeon in REDCap so they appear on the right dashboard.</div></div>`;
+  }
+  validationDiv.innerHTML = html;
+
+  // Preview table — parsed patient summary (what dashboards will show)
   const previewWrap = document.getElementById('preview-table-wrap');
   previewWrap.innerHTML = `<table>
-    <thead><tr>${previewCols.map(h => `<th>${escHtml(h)}</th>`).join('')}${headers.length > 10 ? `<th>+${headers.length - 10} more...</th>` : ''}</tr></thead>
-    <tbody>${rows.slice(0, 8).map(row => `<tr>${previewCols.map(h => `<td>${escHtml(row[h] || '')}</td>`).join('')}${headers.length > 10 ? '<td>...</td>' : ''}</tr>`).join('')}</tbody>
+    <thead><tr><th>Record</th><th>Surgeon</th><th>Location</th><th>Device</th><th>Implant Date</th><th>Status</th><th>OAB-q Baseline</th><th>OAB-q Latest</th><th>PGI-I</th><th>Complication</th></tr></thead>
+    <tbody>${patients.map(p => {
+      const latestOabq = p.oabq_12mo ?? p.oabq_6mo ?? p.oabq_3mo ?? p.oabq_1mo;
+      return `<tr>
+        <td><code style="font-size:0.8rem;">${escHtml(p.record_id)}</code></td>
+        <td>${escHtml(p._surgeon || '—')}</td>
+        <td>${escHtml(p._institution || '—')}</td>
+        <td>${deviceBadgeHTML(p.device)}</td>
+        <td>${escHtml(p.implant_date || '—')}</td>
+        <td>${statusBadgeHTML(p.status)}</td>
+        <td>${p.oabq_baseline != null ? p.oabq_baseline : '—'}</td>
+        <td>${latestOabq != null ? latestOabq : '—'}</td>
+        <td>${pgiiText(p.pgii_latest)}</td>
+        <td>${p.complication_yn === 'yes' ? '<span class="badge badge-red">Yes</span>' : '<span class="badge badge-green">No</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody>
   </table>`;
 
   // Step 3
@@ -925,8 +1057,20 @@ async function renderProviderDashboardList(providers) {
     return;
   }
 
-  // Identify providers missing an email (they won't appear in dashboards)
-  const missing = providerEntries.filter(([, p]) => !p.provider_email);
+  // Auto-fill missing emails from the registered-provider sheet (if loaded)
+  const regs = window._providerData || null;
+  if (regs) {
+    providerEntries.forEach(([name, pdata]) => {
+      if (!pdata.provider_email && !name.startsWith('Unassigned')) {
+        const m = matchRegistration(name, regs);
+        if (m && m['Email']) pdata.provider_email = String(m['Email']).trim().toLowerCase();
+      }
+    });
+  }
+
+  // REDCap exports carry no provider email — surgeons must be matched to a
+  // registered email (their dashboard login) before their dashboard can be built
+  const missing = providerEntries.filter(([n, p]) => !p.provider_email && !n.startsWith('Unassigned'));
 
   // Build the all-providers JSON (async, hashes each email)
   const json = await buildProviderDataJSON(providers);
@@ -934,13 +1078,14 @@ async function renderProviderDashboardList(providers) {
   const providerCount = Object.keys(json.providers).length;
 
   list.innerHTML = `
-    <div class="alert alert-success" style="margin-bottom:16px;">
-      <span class="alert-icon">&#x2705;</span>
+    <div class="alert ${missing.length ? 'alert-warning' : 'alert-success'}" style="margin-bottom:16px;">
+      <span class="alert-icon">${missing.length ? '&#x26A0;' : '&#x2705;'}</span>
       <div>
         <strong>${providerCount} provider dashboard${providerCount !== 1 ? 's' : ''} ready.</strong>
-        Download the file below and place it at <code>data/provider-data.json</code> on your server.
-        Every provider's dashboard will update automatically — no links to re-send.
-        ${missing.length ? `<br/><span style="color:var(--warning);">&#x26A0; ${missing.length} provider(s) have no email in REDCap and will not appear in dashboards: ${missing.map(([n]) => escHtml(n)).join(', ')}</span>` : ''}
+        The REDCap export identifies surgeons by name only, so each surgeon must be matched to the
+        email they registered with (their dashboard login).
+        ${regs ? '' : '<br/>Tip: click <strong>Load Providers</strong> above first to auto-match surgeons against the registration sheet.'}
+        ${missing.length ? `<br/><span style="color:#7a5400;">&#x26A0; ${missing.length} surgeon(s) not yet matched to an email — fill in the box under their name and click <strong>Save emails &amp; rebuild</strong>. Unmatched surgeons are left out of the dashboard file: ${missing.map(([n]) => escHtml(n)).join(', ')}</span>` : ''}
       </div>
     </div>
 
@@ -948,13 +1093,16 @@ async function renderProviderDashboardList(providers) {
       <button class="btn btn-primary" onclick="downloadProviderDataJSON()">
         &#x2B07; Download provider-data.json
       </button>
+      <button class="btn btn-sm" style="background:var(--sand);color:var(--cardinal);border:1px solid var(--border);align-self:center;" onclick="applyProviderEmails()">
+        &#x1F4BE; Save emails &amp; rebuild
+      </button>
       <span style="font-size:0.82rem;color:var(--text-light);align-self:center;">
-        Deploy this single file to update all ${providerCount} provider dashboards at once
+        Deploy this single file as <code>data/provider-data.json</code> to update all ${providerCount} provider dashboards at once
       </span>
     </div>
 
     <div style="font-size:0.88rem;font-weight:700;color:var(--cool-grey);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">
-      All Providers — click Preview to inspect any individual dashboard
+      All Surgeons — click Preview to inspect any individual dashboard
     </div>
 
     ${providerEntries.map(([name, pdata]) => {
@@ -964,7 +1112,7 @@ async function renderProviderDashboardList(providers) {
       const revi = pts.filter(p => (p.device||'').toLowerCase().includes('revi')).length;
       const ecoin = pts.filter(p => (p.device||'').toLowerCase().includes('ecoin')).length;
       const altaviva = pts.filter(p => (p.device||'').toLowerCase().includes('altaviva')).length;
-      const hasEmail = !!pdata.provider_email;
+      const unassigned = name.startsWith('Unassigned');
       const safeName = escHtml(name);
       const safeDataAttr = encodeURIComponent(JSON.stringify({
         display_name: pdata.provider_name || name,
@@ -975,12 +1123,15 @@ async function renderProviderDashboardList(providers) {
         <div style="flex:1;min-width:200px;">
           <strong>${safeName}</strong>
           ${pdata.institution ? `<span style="color:var(--text-light);font-size:0.85rem;"> &bull; ${escHtml(pdata.institution)}</span>` : ''}
-          ${!hasEmail ? `<span class="badge badge-yellow" style="margin-left:6px;">no email</span>` : ''}
+          ${!pdata.provider_email && !unassigned ? `<span class="badge badge-yellow" style="margin-left:6px;">needs email</span>` : ''}
           <div style="font-size:0.8rem;color:var(--text-light);margin-top:3px;">
             ${pts.length} patient(s) &bull; ${implanted} implanted &bull;
             ${revi ? `Revi: ${revi}` : ''}${ecoin ? ` eCoin: ${ecoin}` : ''}${altaviva ? ` Altaviva: ${altaviva}` : ''} &bull;
             ${comps} complication${comps !== 1 ? 's' : ''}
           </div>
+          ${unassigned ? '' : `<input type="email" class="prov-email-input" data-key="${encodeURIComponent(name)}"
+            value="${escHtml(pdata.provider_email)}" placeholder="registered email, e.g. name@institution.edu"
+            style="margin-top:6px;width:100%;max-width:320px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;" />`}
         </div>
         <button class="btn btn-sm btn-primary" onclick="previewProviderDashboard(decodeURIComponent('${safeDataAttr}'))">
           &#x1F50D; Preview Dashboard
@@ -991,6 +1142,20 @@ async function renderProviderDashboardList(providers) {
 
   // Store JSON string globally for the download button
   window._providerDataJSON = jsonStr;
+}
+
+// Reads the email inputs, persists the surgeon→email map, and rebuilds the JSON
+function applyProviderEmails() {
+  const map = getProviderEmailMap();
+  document.querySelectorAll('.prov-email-input').forEach(inp => {
+    const key = decodeURIComponent(inp.dataset.key);
+    const email = inp.value.trim().toLowerCase();
+    if (_parsedProviders[key]) _parsedProviders[key].provider_email = email;
+    if (email) map[key.toLowerCase()] = email;
+    else delete map[key.toLowerCase()];
+  });
+  saveProviderEmailMap(map);
+  renderProviderDashboardList(_parsedProviders);
 }
 
 async function buildProviderDataJSON(providers) {

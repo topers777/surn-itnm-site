@@ -121,7 +121,7 @@
         </div>
         <div class="arch-item">
           <h4>&#x1F504; REDCap Data Updates</h4>
-          <p>REDCap doesn&apos;t connect directly to this site. Export a fresh CSV weekly (or as needed) and re-upload here to generate updated dashboard links.</p>
+          <p>REDCap doesn&apos;t connect directly to this site. Export a fresh CSV <strong>every two weeks</strong> (or on request) and re-upload here to refresh all provider dashboards.</p>
         </div>
       </div>
     </div>
@@ -139,7 +139,7 @@
       <div class="table-wrap" id="providers-table-wrap" style="display:none;">
         <table id="providers-table">
           <thead><tr>
-            <th>Registered</th><th>Name</th><th>Institution</th><th>Email</th>
+            <th>#</th><th>Registered</th><th>Name</th><th>Institution</th><th>Email</th>
             <th>Devices</th><th>Implants/yr</th><th>Specialty</th>
           </tr></thead>
           <tbody id="providers-tbody"></tbody>
@@ -153,8 +153,10 @@
       <div class="card-title"><span class="icon">&#x1F4C2;</span> Step 1: Upload REDCap Export</div>
 
       <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:16px;">
-        In REDCap: <strong>My Projects &rarr; [ITNM Project] &rarr; Data Exports, Reports, and Stats &rarr; Export Data &rarr; CSV/Microsoft Excel (raw data)</strong>.
-        The file must include the columns in the template below.
+        In REDCap: <strong>My Projects &rarr; SURN ITNM Registry &rarr; Data Exports, Reports, and Stats &rarr; Export Data &rarr;
+        CSV / Microsoft Excel (<u>raw data</u>)</strong>. The file looks like <code>SURNITNMRegistry_DATA_&lt;date&gt;.csv</code>
+        &mdash; one row per patient per event (<code>baseline_arm_1</code>, <code>one_month_arm_1</code>, &hellip;) with
+        variable names as headers. <strong>Do not</strong> use the &ldquo;labels&rdquo; export &mdash; it will be rejected.
         <a href="sample-redcap-template.csv" download>Download expected column template &rarr;</a>
       </p>
 
@@ -182,7 +184,12 @@
       <div class="alert alert-info" style="margin-bottom:16px;">
         <span class="alert-icon">&#x1F511;</span>
         <div style="font-size:0.88rem;">
-          Each provider&apos;s data is <strong>encoded directly into their unique URL</strong> &mdash; no login or account needed. When they open the link, their dashboard loads immediately on any device. <strong>Copy each link and email it to the provider.</strong> They should bookmark it. Re-upload updated REDCap data whenever you want to refresh their numbers.
+          Providers sign in to <code>dashboard.html</code> with their <strong>registered email address</strong>.
+          The REDCap export only has surgeon names, so match each surgeon to their registered email below
+          (click <strong>Load Providers</strong> above to auto-match; matches are remembered on this computer).
+          Then download <code>provider-data.json</code> and deploy it to <code>data/provider-data.json</code> &mdash;
+          every provider dashboard updates at once. Repeat this upload <strong>every two weeks</strong>;
+          providers whose data hasn&apos;t been uploaded yet see a holding page.
         </div>
       </div>
 
@@ -258,7 +265,7 @@ if (sessionStorage.getItem('itnm_admin_auth') === '1') {
 }
 
 // ── Load registered providers from Google Apps Script ──────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFSnuVBOlACGAQpfFwzMD45lXFODY2pKivm7IzeiRxrzZhiNJMYefNagOze0kXaNux/exec';
+// (APPS_SCRIPT_URL is declared in assets/js/app.js and shared here)
 
 function downloadCSV() {
   const rows = window._providerData;
@@ -303,10 +310,13 @@ async function loadProviders() {
       document.getElementById('providers-empty').style.display = 'none';
       document.getElementById('providers-table-wrap').style.display = 'block';
 
-      json.providers.forEach(p => {
+      json.providers.forEach((p, i) => {
         const ts = p['Timestamp'] ? new Date(p['Timestamp']).toLocaleDateString() : '—';
+        // Reg # comes from the sheet; fall back to row order for pre-numbering rows
+        const regNum = p['Reg #'] || (i + 1);
         const tr = document.createElement('tr');
         tr.innerHTML = `
+          <td><strong>${regNum}</strong></td>
           <td>${ts}</td>
           <td>${p['First Name'] || ''} ${p['Last Name'] || ''}, ${p['Credentials'] || ''}</td>
           <td>${p['Institution'] || '—'}</td>

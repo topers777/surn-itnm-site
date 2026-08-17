@@ -220,6 +220,32 @@
 
   </div><!-- /lookup-gate -->
 
+  <!-- ══ HOLDING PAGE (registered provider, no data uploaded yet) ══ -->
+  <div id="holding-state" class="lookup-wrap hidden">
+    <div class="lookup-card" style="max-width:520px;">
+      <div class="lock-icon">&#x1F4CA;</div>
+      <h2>Your dashboard is on its way</h2>
+      <p class="lookup-sub" style="margin-bottom:8px;">
+        There is no registry data linked to <strong id="holding-email"></strong> yet.
+      </p>
+      <p style="font-size:0.9rem;color:var(--text-light);text-align:left;margin-bottom:18px;">
+        Registry data is uploaded from REDCap to provider dashboards <strong>every two weeks</strong>.
+        Your dashboard will populate automatically once your patients&rsquo; data is included in an
+        upload &mdash; there is nothing you need to do.
+      </p>
+      <a class="btn btn-primary" style="width:100%;display:block;padding:12px;font-size:0.95rem;margin-bottom:10px;"
+         href="mailto:SUFUResearch@stanford.edu?subject=ITNM%20Provider%20Dashboard%20Update%20Request">
+        &#x2709; Request an earlier update
+      </a>
+      <button class="btn btn-sm" style="width:100%;background:var(--sand);color:var(--cardinal);border:1px solid var(--border);" onclick="backToLookup()">
+        Try a different email
+      </button>
+      <p style="font-size:0.78rem;color:var(--text-light);margin-top:18px;margin-bottom:0;">
+        Questions? <a href="mailto:SUFUResearch@stanford.edu">SUFUResearch@stanford.edu</a>
+      </p>
+    </div>
+  </div><!-- /holding-state -->
+
   <!-- ══ DASHBOARD CONTENT (shown after successful lookup) ══ -->
   <div id="dashboard-state" class="hidden" style="padding: 24px 0 60px;">
     <div class="container">
@@ -290,8 +316,8 @@
           <p style="font-size:0.78rem;color:var(--text-light);margin-top:8px;">OAB-Q Symptom Bother subscale (0&ndash;100). Only patients with data at each timepoint included.</p>
         </div>
         <div class="chart-grid">
-          <div class="chart-card"><h3>Pad Use Change (baseline vs. 6 months)</h3><div class="chart-wrapper"><canvas id="chart-pads"></canvas></div></div>
-          <div class="chart-card"><h3>Daily Urgency Episodes Change</h3><div class="chart-wrapper"><canvas id="chart-urgency"></canvas></div></div>
+          <div class="chart-card"><h3>Pad Use Change (baseline vs. latest follow-up)</h3><div class="chart-wrapper"><canvas id="chart-pads"></canvas></div></div>
+          <div class="chart-card"><h3>Daily Leakage Episodes (baseline vs. latest follow-up)</h3><div class="chart-wrapper"><canvas id="chart-urgency"></canvas></div></div>
         </div>
       </div>
 
