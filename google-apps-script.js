@@ -10,11 +10,37 @@
 //  5. Deploy → New deployment → Web app
 //     Execute as: Me | Who has access: Anyone → Deploy
 //  6. Copy the Web App URL → paste into app.js
+//  7. Project Settings (gear) → Script Properties → add ADMIN_KEY
+//     = the study-team admin password. Never put it in this file:
+//     the site's source is public. Until it is set, the provider
+//     list stays locked for everyone.
 // ─────────────────────────────────────────────────────────────
 
 const NOTIFY_EMAIL   = 'SUFUResearch@stanford.edu';
 const SHEET_NAME     = 'ITNM Provider Registrations';
 const DASHBOARD_URL  = 'https://ITNMDatabase.surn.stanford.edu/dashboard.html';
+
+// Wrong-password lockout: after this many failures within the window,
+// every admin request is refused until the window passes
+const MAX_FAILED_LOGINS = 10;
+const LOCKOUT_SECONDS   = 900;
+
+function isAdmin(key) {
+  var cache = CacheService.getScriptCache();
+  var failures = Number(cache.get('failed_logins') || 0);
+  if (failures >= MAX_FAILED_LOGINS) return false;
+
+  var expected = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (expected && typeof key === 'string' && key === expected) return true;
+
+  cache.put('failed_logins', String(failures + 1), LOCKOUT_SECONDS);
+  return false;
+}
+
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
 
 // Run this once to authorize and test
 function setup() {
@@ -26,16 +52,28 @@ function setup() {
   Logger.log('Setup complete. Check your Gmail inbox.');
 }
 
-// Receives form POST from the website
+// Receives form POSTs from the website: admin requests (password in the
+// body, never the URL) or a provider registration
 function doPost(e) {
+  var data;
   try {
-    var data = JSON.parse(e.postData.contents);
+    data = JSON.parse(e.postData.contents);
+  } catch(err) {
+    return ok();
+  }
+
+  if (data.action === 'auth') {
+    return json({ success: isAdmin(data.key) });
+  }
+  if (data.action === 'providers') {
+    return isAdmin(data.key) ? getProviders() : json({ success: false, error: 'Unauthorized' });
+  }
+
+  try {
     var regNum = saveRow(data);
     notifyTeam(data, regNum);
-    return ok();
-  } catch(err) {
-    return ok(); // always return 200 so form shows success
-  }
+  } catch(err) {}
+  return ok(); // always return 200 so form shows success
 }
 
 function doGet(e) {
@@ -45,10 +83,6 @@ function doGet(e) {
       var regNum = saveRow(data);
       notifyTeam(data, regNum);
     } catch(err) {}
-    return ok();
-  }
-  if (e && e.parameter && e.parameter.action === 'providers') {
-    return getProviders();
   }
   return ok();
 }

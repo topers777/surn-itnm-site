@@ -208,10 +208,12 @@
         <div class="arch-item"><h4>Provider Dashboard</h4><p><code>…/dashboard.html</code></p></div>
         <div class="arch-item"><h4>Admin (this page)</h4><p><code>…/admin.html</code> &mdash; password protected</p></div>
       </div>
-      <div class="alert alert-warning mt-2" style="margin-bottom:0;">
-        <span class="alert-icon">&#x26A0;</span>
+      <div class="alert alert-info mt-2" style="margin-bottom:0;">
+        <span class="alert-icon">&#x1F511;</span>
         <div style="font-size:0.85rem;">
-          The default admin password is <code>SURN2026!</code> &mdash; change it in <code>assets/js/app.js</code> before going live.
+          The admin password is stored only in the Google Apps Script project
+          (<strong>Project Settings &rarr; Script Properties &rarr; ADMIN_KEY</strong>). Change it there; there is
+          nothing to edit on this site. Ten wrong attempts lock admin access for 15 minutes.
         </div>
       </div>
     </div>
@@ -236,36 +238,51 @@
 
 <script>
 // ── Password gate ──────────────────────────────────────────────
-// Change ADMIN_PASSWORD_HASH to lock/unlock. Default: SURN2026!
-// To change: run this in browser console:
-//   await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourpassword'))
-//     .then(b => [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))
-const ADMIN_PASSWORD_HASH = '5b5ba8cfd92e0e166aa30f1cc894ca0bd2d6f00358e1f11a2edf9af43400d6a3'; // SURN2026!
+// The password is checked by the Apps Script (Script Property ADMIN_KEY),
+// so nothing secret lives in this public page. The password is kept in
+// sessionStorage for this tab only and sent in POST bodies, never URLs.
+// (APPS_SCRIPT_URL is declared in assets/js/app.js and shared here)
+
+async function adminRequest(action) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, key: sessionStorage.getItem('itnm_admin_key') || '' })
+  });
+  return res.json();
+}
+
+function showAdmin(unlocked) {
+  document.getElementById('pw-gate').style.display = unlocked ? 'none' : '';
+  document.getElementById('admin-content').style.display = unlocked ? '' : 'none';
+}
 
 async function checkPassword() {
-  const val = document.getElementById('pw-input').value;
-  if (!val) { document.getElementById('pw-error').textContent = 'Please enter the password.'; return; }
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val))
-    .then(b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''));
-  if (hash === ADMIN_PASSWORD_HASH) {
-    sessionStorage.setItem('itnm_admin_auth', '1');
-    document.getElementById('pw-gate').style.display = 'none';
-    document.getElementById('admin-content').style.display = '';
-  } else {
-    document.getElementById('pw-error').textContent = 'Incorrect password. Try again.';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+  const input = document.getElementById('pw-input');
+  const errEl = document.getElementById('pw-error');
+  if (!input.value) { errEl.textContent = 'Please enter the password.'; return; }
+  errEl.textContent = 'Checking…';
+  sessionStorage.setItem('itnm_admin_key', input.value);
+  try {
+    const json = await adminRequest('auth');
+    if (json.success) {
+      errEl.textContent = '';
+      showAdmin(true);
+      return;
+    }
+    errEl.textContent = 'Incorrect password, or too many recent attempts. Try again later.';
+  } catch (e) {
+    errEl.textContent = 'Could not reach the server. Check your connection and try again.';
   }
+  sessionStorage.removeItem('itnm_admin_key');
+  input.value = '';
+  input.focus();
 }
 
-// Auto-unlock if already authenticated this session
-if (sessionStorage.getItem('itnm_admin_auth') === '1') {
-  document.getElementById('pw-gate').style.display = 'none';
-  document.getElementById('admin-content').style.display = '';
-}
+// Re-entering the page in the same tab: show the admin view. The server
+// still checks the stored password on every data request.
+if (sessionStorage.getItem('itnm_admin_key')) showAdmin(true);
 
 // ── Load registered providers from Google Apps Script ──────
-// (APPS_SCRIPT_URL is declared in assets/js/app.js and shared here)
 
 function downloadCSV() {
   const rows = window._providerData;
@@ -290,10 +307,17 @@ async function loadProviders() {
   feedback.innerHTML = '';
 
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=providers`);
-    const json = await res.json();
+    const json = await adminRequest('providers');
 
-    if (!json.success) throw new Error(json.error || 'Unauthorized');
+    if (!json.success) {
+      if (json.error === 'Unauthorized') {
+        sessionStorage.removeItem('itnm_admin_key');
+        showAdmin(false);
+        document.getElementById('pw-error').textContent = 'Your session expired or the password changed. Please sign in again.';
+        return;
+      }
+      throw new Error(json.error || 'Request failed');
+    }
 
     if (json.providers && json.providers.length > 0) {
       window._providerData = json.providers;
@@ -314,16 +338,18 @@ async function loadProviders() {
         const ts = p['Timestamp'] ? new Date(p['Timestamp']).toLocaleDateString() : '—';
         // Reg # comes from the sheet; fall back to row order for pre-numbering rows
         const regNum = p['Reg #'] || (i + 1);
+        // Every value here was typed by an anonymous registrant — escape it all
+        const e = v => escHtml(v ?? '');
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${regNum}</strong></td>
-          <td>${ts}</td>
-          <td>${p['First Name'] || ''} ${p['Last Name'] || ''}, ${p['Credentials'] || ''}</td>
-          <td>${p['Institution'] || '—'}</td>
-          <td><a href="mailto:${p['Email']}">${p['Email'] || '—'}</a></td>
-          <td>${p['Devices'] || '—'}</td>
-          <td>${p['Implants/yr'] || '—'}</td>
-          <td>${p['Specialty'] || '—'}</td>
+          <td><strong>${e(regNum)}</strong></td>
+          <td>${e(ts)}</td>
+          <td>${e(p['First Name'])} ${e(p['Last Name'])}, ${e(p['Credentials'])}</td>
+          <td>${e(p['Institution'] || '—')}</td>
+          <td>${p['Email'] ? `<a href="mailto:${e(p['Email'])}">${e(p['Email'])}</a>` : '—'}</td>
+          <td>${e(p['Devices'] || '—')}</td>
+          <td>${e(p['Implants/yr'] || '—')}</td>
+          <td>${e(p['Specialty'] || '—')}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -331,7 +357,7 @@ async function loadProviders() {
       feedback.innerHTML = `<span style="color:var(--success);">&#x2713; ${json.providers.length} provider${json.providers.length !== 1 ? 's' : ''} loaded.</span>`;
     }
   } catch (err) {
-    feedback.innerHTML = `<span style="color:var(--cardinal);">Error: ${err.message}. Check the URL and Admin Key.</span>`;
+    feedback.innerHTML = `<span style="color:var(--cardinal);">Error: ${escHtml(err.message)}. Please try again.</span>`;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Load Providers';

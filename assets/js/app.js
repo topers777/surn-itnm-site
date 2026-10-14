@@ -668,7 +668,7 @@ function deviceBadgeHTML(device) {
 function pgiiText(val) {
   const map = { '1': 'Very Much Better', '2': 'Much Better', '3': 'A Little Better', '4': 'No Change', '5': 'A Little Worse', '6': 'Much Worse', '7': 'Very Much Worse' };
   if (!val) return '—';
-  return map[String(val)] || val;
+  return map[String(val)] || escHtml(val);
 }
 
 // ─── Complications Tab ───
@@ -1114,11 +1114,6 @@ async function renderProviderDashboardList(providers) {
       const altaviva = pts.filter(p => (p.device||'').toLowerCase().includes('altaviva')).length;
       const unassigned = name.startsWith('Unassigned');
       const safeName = escHtml(name);
-      const safeDataAttr = encodeURIComponent(JSON.stringify({
-        display_name: pdata.provider_name || name,
-        institution: pdata.institution || '',
-        patients: pdata.patients
-      }));
       return `<div class="provider-list-item">
         <div style="flex:1;min-width:200px;">
           <strong>${safeName}</strong>
@@ -1133,7 +1128,8 @@ async function renderProviderDashboardList(providers) {
             value="${escHtml(pdata.provider_email)}" placeholder="registered email, e.g. name@institution.edu"
             style="margin-top:6px;width:100%;max-width:320px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;" />`}
         </div>
-        <button class="btn btn-sm btn-primary" onclick="previewProviderDashboard(decodeURIComponent('${safeDataAttr}'))">
+        <button class="btn btn-sm btn-primary" data-key="${encodeURIComponent(name)}"
+                onclick="previewProviderDashboard(decodeURIComponent(this.dataset.key))">
           &#x1F50D; Preview Dashboard
         </button>
       </div>`;
@@ -1178,14 +1174,17 @@ function downloadProviderDataJSON() {
   downloadFile(window._providerDataJSON, 'provider-data.json', 'application/json');
 }
 
-function previewProviderDashboard(dataStr) {
-  try {
-    const data = JSON.parse(dataStr);
-    sessionStorage.setItem('itnm_admin_preview', JSON.stringify(data));
-    window.open('dashboard.html?preview=1', '_blank');
-  } catch (e) {
-    alert('Could not open preview: ' + e.message);
-  }
+// Surgeon names come from patient-entered REDCap text, so the button passes
+// only the name (via a data attribute) and the data is looked up here
+function previewProviderDashboard(name) {
+  const pdata = _parsedProviders[name];
+  if (!pdata) { alert('Could not open preview: surgeon not found. Re-upload the CSV.'); return; }
+  sessionStorage.setItem('itnm_admin_preview', JSON.stringify({
+    display_name: pdata.provider_name || name,
+    institution: pdata.institution || '',
+    patients: pdata.patients
+  }));
+  window.open('dashboard.html?preview=1', '_blank');
 }
 
 // ─── Feedback helper ───
